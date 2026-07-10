@@ -3,7 +3,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import {
   Search,
   Bell,
@@ -13,7 +13,6 @@ import {
   X,
   Package,
   ShoppingBag,
-  Users,
   Settings,
   LogOut,
   ChevronDown,
@@ -28,6 +27,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { isAdminAuthenticated, decodeAdminToken } from '@/lib/auth';
+import { adminNavItems } from './adminNav';
 
 // ── helpers ────────────────────────────────────────────────────────────────
 function timeAgo(dateStr) {
@@ -63,6 +63,7 @@ function NotifIcon({ type }) {
 
 function Header() {
   const router = useRouter();
+  const pathname = usePathname();
 
   // ── search state ─────────────────────────────────────────────────────────
   const [searchQuery, setSearchQuery]         = useState('');
@@ -222,6 +223,15 @@ function Header() {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  // ── lock body scroll while the mobile drawer is open ───────────────────────
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = prev; };
+    }
+  }, [isMobileMenuOpen]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -536,44 +546,57 @@ function Header() {
         </div>
       </header>
 
-      {/* ── Mobile Sidebar Overlay ─────────────────────────────────────────── */}
+      {/* ── Mobile Sidebar Drawer ──────────────────────────────────────────── */}
       {isMobileMenuOpen && (
         <>
+          {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
             onClick={() => setIsMobileMenuOpen(false)}
+            aria-hidden="true"
           />
-          <div className="fixed top-0 left-0 w-64 h-full bg-surface border-r border-outline-variant z-40 lg:hidden animate-slide-in">
+          {/* Drawer — full nav, shares adminNavItems with the desktop sidebar */}
+          <aside className="fixed top-0 left-0 w-64 h-full bg-surface-container-low dark:bg-surface-container-lowest border-r border-outline-variant z-50 lg:hidden flex flex-col animate-slide-in">
             <div className="p-4 border-b border-outline-variant flex justify-between items-center">
-              <h1 className="text-headline-md font-headline-md text-primary">Shop Admin</h1>
-              <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 rounded-lg hover:bg-surface-container">
+              <div>
+                <h1 className="text-headline-md font-headline-md font-bold text-on-surface">Merchant Admin</h1>
+                <p className="text-body-sm text-on-surface-variant">Manage your store</p>
+              </div>
+              {/* Close button — dismisses the drawer on mobile */}
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-2 rounded-lg hover:bg-surface-container-high transition-colors"
+                aria-label="Close menu"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <p className="px-4 text-body-sm text-on-surface-variant">Merchant Portal</p>
-            <nav className="p-4 space-y-1">
-              {(adminData
-                ? [
-                    { icon: <Package className="w-5 h-5" />,     label: 'Dashboard',      to: '/admin' },
-                    { icon: <ShoppingBag className="w-5 h-5" />, label: 'Orders',          to: '/admin/orders' },
-                    { icon: <Users className="w-5 h-5" />,       label: 'Customers',       to: '/admin/customers' },
-                    { icon: <Bell className="w-5 h-5" />,        label: 'Notifications',   to: '/admin/notifications' },
-                    { icon: <Settings className="w-5 h-5" />,    label: 'Settings',        to: '/admin/settings' },
-                  ]
-                : [{ icon: <User className="w-5 h-5" />, label: 'Login', to: '/admin/login' }]
-              ).map((item) => (
-                <Link
-                  key={item.to}
-                  href={item.to}
-                  className="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  {item.icon}
-                  <span className="text-body-md">{item.label}</span>
-                </Link>
-              ))}
+
+            <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+              {adminNavItems.map((item) => {
+                const active = item.href === '/admin'
+                  ? pathname === '/admin'
+                  : pathname.startsWith(item.href);
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={
+                      active
+                        ? 'flex items-center gap-3 px-4 py-3 rounded-lg text-primary font-bold bg-primary-container/10 transition-colors'
+                        : 'flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors'
+                    }
+                  >
+                    <Icon size={20} />
+                    <span className="text-body-md">{item.label}</span>
+                  </Link>
+                );
+              })}
             </nav>
-            <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-outline-variant">
+
+            <div className="p-4 border-t border-outline-variant">
               {adminData ? (
                 <button
                   onClick={handleLogout}
@@ -585,6 +608,7 @@ function Header() {
               ) : (
                 <Link
                   href="/admin/login"
+                  onClick={() => setIsMobileMenuOpen(false)}
                   className="w-full flex items-center gap-3 px-4 py-3 text-primary hover:bg-primary-container/10 rounded-lg transition-colors"
                 >
                   <User className="w-5 h-5" />
@@ -592,7 +616,7 @@ function Header() {
                 </Link>
               )}
             </div>
-          </div>
+          </aside>
         </>
       )}
     </>

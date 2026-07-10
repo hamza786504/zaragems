@@ -90,6 +90,18 @@
     .animate-fade-in-up {
         animation: fadeInUp 0.8s ease-out forwards;
     }
+
+    @keyframes slideInLeft {
+        from {
+            transform: translateX(-100%);
+        }
+        to {
+            transform: translateX(0);
+        }
+    }
+    .animate-slide-in {
+        animation: slideInLeft 0.25s ease-out;
+    }
 }
 
 @layer utilities {

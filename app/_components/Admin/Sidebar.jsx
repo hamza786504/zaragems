@@ -2,30 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import React, { useEffect, useState } from 'react'
-import { 
-  MdHome, 
-  MdShoppingCart, 
-  MdInventory, 
-  MdFolderOpen, 
-  MdGroup, 
-  MdRateReview, 
-  MdAnalytics, 
-  MdSettings,
-  MdNotifications,
-} from 'react-icons/md';
-
-const navItems = [
-  { href: '/admin', label: 'Home', icon: MdHome },
-  { href: '/admin/orders', label: 'Orders', icon: MdShoppingCart },
-  { href: '/admin/products', label: 'Products', icon: MdInventory },
-  { href: '/admin/collections', label: 'Collections', icon: MdFolderOpen },
-  { href: '/admin/customers', label: 'Customers', icon: MdGroup },
-  { href: '/admin/reviews', label: 'Reviews', icon: MdRateReview },
-  { href: '/admin/analytics', label: 'Analytics', icon: MdAnalytics },
-  { href: '/admin/notifications', label: 'Notifications', icon: MdNotifications },
-  { href: '/admin/settings', label: 'Settings', icon: MdSettings, isSettings: true },
-];
+import React from 'react'
+import { adminNavItems } from './adminNav';
 
 function Sidebar() {
   const pathname = usePathname();
@@ -37,8 +15,8 @@ function Sidebar() {
 
   return (
     <>
-         {/* SideNavBar */}
-      <aside className="w-60 h-screen fixed left-0 top-0 bg-surface-container-low dark:bg-surface-container-lowest border-r border-outline-variant flex flex-col h-full z-50">
+         {/* SideNavBar — desktop only (hidden on mobile, revealed via the hamburger drawer in Header) */}
+      <aside className="hidden lg:flex w-60 h-screen fixed left-0 top-0 bg-surface-container-low dark:bg-surface-container-lowest border-r border-outline-variant flex-col z-50">
         <div className="p-lg">
           <h1 className="font-headline-md text-headline-md font-bold text-on-surface">
             Merchant Admin
@@ -50,7 +28,7 @@ function Sidebar() {
         
         <nav className="flex-1 px-sm">
           <ul className="space-y-base">
-            {navItems.map((item) => {
+            {adminNavItems.map((item) => {
               const active = isActive(item.href);
               const Icon = item.icon;
               return (
