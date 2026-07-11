@@ -435,7 +435,7 @@ const EditProductPage = () => {
                 <section className="bg-white border border-outline-variant p-3 md:p-6 rounded-xl shadow-sm space-y-4">
                   <h3 className="font-headline-md text-headline-md font-bold">Pricing</h3>
                   <div>
-                    <label className="block text-label-md font-bold text-on-surface-variant mb-2">Price ($)</label>
+                    <label className="block text-label-md font-bold text-on-surface-variant mb-2">Price Pkr</label>
                     <input
                       className="w-full border border-outline-variant rounded-lg p-2.5 bg-white text-on-surface"
                       type="number"
@@ -445,7 +445,7 @@ const EditProductPage = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-label-md font-bold text-on-surface-variant mb-2">Compare-at price ($)</label>
+                    <label className="block text-label-md font-bold text-on-surface-variant mb-2">Compare-at Price Pkr</label>
                     <input
                       className="w-full border border-outline-variant rounded-lg p-2.5 bg-white text-on-surface"
                       type="number"
@@ -455,7 +455,7 @@ const EditProductPage = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-label-md font-bold text-on-surface-variant mb-2">Cost per item ($)</label>
+                    <label className="block text-label-md font-bold text-on-surface-variant mb-2">Cost per item Pkr</label>
                     <input
                       className="w-full border border-outline-variant rounded-lg p-2.5 bg-white text-on-surface"
                       type="number"
@@ -513,7 +513,7 @@ const EditProductPage = () => {
                         />
                       </div>
                       <div className="flex-1 min-w-[100px]">
-                        <label className="block text-label-md text-on-surface-variant mb-1 font-bold">Price ($)</label>
+                        <label className="block text-label-md text-on-surface-variant mb-1 font-bold">Price Pkr</label>
                         <input
                           type="number"
                           className="w-full border border-outline-variant rounded-lg p-2 bg-white text-on-surface"

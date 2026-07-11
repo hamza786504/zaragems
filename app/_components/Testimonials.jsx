@@ -1,3 +1,4 @@
+'use client'
 // components/Testimonials.jsx
 const testimonials = [
     {

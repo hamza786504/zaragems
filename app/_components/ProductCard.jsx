@@ -72,19 +72,19 @@ export default function ProductCard({
                     {justAdded ? 'ADDED ✓' : 'QUICK ADD'}
                 </button>
             </div>
-            <div className="mt-4 flex flex-col gap-1">
+            <div className="mt-2 md:mt-4 flex flex-col gap-1">
                 {type && (
-                    <p className="text-label-sm font-label-sm text-on-surface-variant/70 uppercase tracking-widest">
+                    <p className="text-[10px] sm:text-label-sm font-label-sm text-on-surface-variant/70 uppercase tracking-widest">
                         {type}
                     </p>
                 )}
                 <Link
                     href={`/product/${slug}`}
-                    className="text-body-lg font-body-lg text-primary font-medium group-hover:text-secondary transition-colors line-clamp-2"
+                    className="text-sm sm:text-body-lg font-body-lg text-primary font-medium group-hover:text-secondary transition-colors line-clamp-2"
                 >
                     {title}
                 </Link>
-                <p className="text-headline-sm font-headline-sm text-secondary font-semibold mt-1">
+                <p className="text-[13px] sm:text-base text-secondary font-semibold md:mt-1">
                     {price}
                 </p>
                 {sizes && sizes.length > 0 && (

@@ -9,7 +9,8 @@ export async function GET() {
       `*[_type == "collection"] | order(name asc){
         ...,
         "createdAt": _createdAt,
-        "updatedAt": _updatedAt
+        "updatedAt": _updatedAt,
+        "productCount": count(*[_type == "product" && collectionId == ^._id])
       }`
     );
     return NextResponse.json({ success: true, collections }, { status: 200 });

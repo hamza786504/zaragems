@@ -46,7 +46,7 @@ export default function Navbar() {
       />
 
       <header className="bg-white docked w-full top-0 sticky z-50 border-b border-secondary/30 transition-transform duration-300">
-        <div className="flex justify-between items-center max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-5 md:py-2">
+        <div className="flex justify-between items-center max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-2 md:py-2">
 
           {/* Brand Logo */}
           <div className="flex items-center space-x-4">

@@ -1,3 +1,4 @@
+'use client'
 // components/Newsletter.jsx
 import { Mail } from 'lucide-react';
 

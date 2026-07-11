@@ -1,3 +1,4 @@
+'use client'
 // components/HandcraftedAccessories.jsx
 import ProductCard from './ProductCard';
 import productsData from '../data/products.json';

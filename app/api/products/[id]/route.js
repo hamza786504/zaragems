@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import client from '@/lib/sanityClient';
 import { slugify } from '@/lib/slugify';
 import { PRODUCT_PROJECTION } from '@/lib/sanityQueries';
@@ -51,6 +52,8 @@ export async function PUT(request, { params }) {
     }
 
     await client.patch(id).set(body).commit();
+    // Purge ISR cache so edits appear immediately on the storefront.
+    revalidateTag('products');
     const product = await client.fetch(`*[_type == "product" && _id == $id][0]${PRODUCT_PROJECTION}`, { id });
 
     return NextResponse.json({ success: true, product }, { status: 200 });
