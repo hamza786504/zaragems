@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { isAdminAuthenticated, decodeAdminToken } from '@/lib/auth';
 import { adminNavItems } from './adminNav';
+import SettingsSubNav from './SettingsSubNav';
 
 // ── helpers ────────────────────────────────────────────────────────────────
 function timeAgo(dateStr) {
@@ -572,28 +573,53 @@ function Header() {
               </button>
             </div>
 
-            <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-              {adminNavItems.map((item) => {
-                const active = item.href === '/admin'
-                  ? pathname === '/admin'
-                  : pathname.startsWith(item.href);
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className={
-                      active
-                        ? 'flex items-center gap-3 px-4 py-3 rounded-lg text-primary font-bold bg-primary-container/10 transition-colors'
-                        : 'flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors'
-                    }
-                  >
-                    <Icon size={20} />
-                    <span className="text-body-md">{item.label}</span>
-                  </Link>
-                );
-              })}
+            <nav className="relative flex-1 p-4 overflow-hidden">
+              {/* Main menu layer */}
+              <div
+                className={
+                  'absolute inset-0 p-4 space-y-1 overflow-y-auto transition-all duration-300 ease-in-out ' +
+                  (pathname.startsWith('/admin/settings')
+                    ? 'opacity-0 -translate-x-4 pointer-events-none'
+                    : 'opacity-100 translate-x-0')
+                }
+              >
+                {adminNavItems.map((item) => {
+                  const active = item.href === '/admin'
+                    ? pathname === '/admin'
+                    : pathname.startsWith(item.href);
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={
+                        active
+                          ? 'flex items-center gap-3 px-4 py-3 rounded-lg text-primary font-bold bg-primary-container/10 transition-colors'
+                          : 'flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors'
+                      }
+                    >
+                      <Icon size={20} />
+                      <span className="text-body-md">{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+
+              {/* Settings sub-menu layer */}
+              <div
+                className={
+                  'absolute inset-0 p-4 overflow-y-auto transition-all duration-300 ease-in-out ' +
+                  (pathname.startsWith('/admin/settings')
+                    ? 'opacity-100 translate-x-0'
+                    : 'opacity-0 translate-x-4 pointer-events-none')
+                }
+              >
+                <SettingsSubNav
+                  variant="mobile"
+                  onNavigate={() => setIsMobileMenuOpen(false)}
+                />
+              </div>
             </nav>
 
             <div className="p-4 border-t border-outline-variant">

@@ -46,8 +46,8 @@ const CollectionsPage = () => {
     }
   };
 
-  const filteredCollections = collections.filter(c => 
-    c.name.toLowerCase().includes(search.toLowerCase()) || 
+  const filteredCollections = collections.filter(c =>
+    c.name.toLowerCase().includes(search.toLowerCase()) ||
     (c.description || '').toLowerCase().includes(search.toLowerCase())
   );
 
@@ -56,7 +56,7 @@ const CollectionsPage = () => {
       <Sidebar />
       <Header />
 
-      <main className="p-lg bg-surface-container-lowest min-h-screen text-on-surface">
+      <main className="p-0 md:p-lg bg-surface-container-lowest min-h-screen text-on-surface">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-xl gap-4">
           <div>
@@ -94,8 +94,8 @@ const CollectionsPage = () => {
             No collections found.
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-outline-variant shadow-sm overflow-hidden">
-            <table className="w-full text-left">
+          <div className="overflow-x-auto bg-white rounded-xl border border-outline-variant shadow-sm overflow-hidden">
+            <table className="w-full text-left overflow-x-auto">
               <thead>
                 <tr className="bg-surface-container-low border-b border-outline-variant">
                   <th className="p-4 font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Collection</th>

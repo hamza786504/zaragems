@@ -6,6 +6,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useCart } from '../store/cartContext';
 import { useNavMenu } from '../store/navMenuContext';
+import { useSiteSettings } from '../store/siteSettingsContext';
 import {
   Menu,
   X,
@@ -24,6 +25,9 @@ export default function Navbar() {
   // ── Dynamic header menu, fetched server-side and provided via context ──────
   // so it's present in the very first render (no client-side fetch/flash).
   const navItems = useNavMenu();
+  const settings = useSiteSettings();
+  const logoSrc = settings?.logoUrl || '/logo.png';
+  const storeName = settings?.storeName || 'Zaragems';
 
   const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
 
@@ -47,7 +51,7 @@ export default function Navbar() {
           {/* Brand Logo */}
           <div className="flex items-center space-x-4">
             <Link href="/">
-              <Image src="/logo.png" width="100" height="70" alt="logo" />
+              <Image src={logoSrc} width="100" height="70" alt={storeName} />
             </Link>
           </div>
 
@@ -132,7 +136,7 @@ export default function Navbar() {
       >
         <div className="flex items-center justify-between border-b border-secondary/20 pb-4 mb-6">
           <span className="text-primary uppercase tracking-wider font-bold" style={{ fontSize: '16px' }}>
-            Zaragems
+            {storeName}
           </span>
           <button
             onClick={() => setMenuOpen(false)}

@@ -60,7 +60,7 @@ const CustomersPage = () => {
   const handleBulkDelete = async () => {
     if (selectedCustomers.length === 0) return;
     if (!confirm(`Are you sure you want to delete ${selectedCustomers.length} selected customers?`)) return;
-    
+
     try {
       const res = await fetch('/api/customers', {
         method: 'DELETE',
@@ -68,7 +68,7 @@ const CustomersPage = () => {
         body: JSON.stringify({ ids: selectedCustomers })
       });
       const data = await res.json();
-      
+
       if (data.success) {
         setCustomers(customers.filter(c => !selectedCustomers.includes(c._id)));
         setSelectedCustomers([]);
@@ -111,7 +111,7 @@ const CustomersPage = () => {
       <Sidebar />
       <Header />
 
-      <main className="p-lg bg-surface-container-lowest min-h-screen text-on-surface">
+      <main className="p-0 md:p-lg bg-surface-container-lowest min-h-screen text-on-surface">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-xl gap-4">
           <div>
@@ -141,7 +141,7 @@ const CustomersPage = () => {
           <div className="col-span-12 lg:col-span-6 bg-white p-4 rounded-xl border border-outline-variant flex flex-wrap gap-4 items-end shadow-sm">
             <div className="flex-1 min-w-[140px]">
               <label className="text-label-md text-on-surface-variant block mb-1 font-bold">Status Filter</label>
-              <select 
+              <select
                 className="w-full p-2 border border-outline-variant rounded-lg bg-white text-on-surface"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
@@ -189,8 +189,8 @@ const CustomersPage = () => {
                 <thead>
                   <tr className="bg-surface-container-low border-b border-outline-variant">
                     <th className="p-4 w-12 text-center">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         className="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary"
                         checked={customers.length > 0 && selectedCustomers.length === customers.length}
                         onChange={handleSelectAll}
@@ -210,8 +210,8 @@ const CustomersPage = () => {
                   {customers.map((customer) => (
                     <tr key={customer._id} className="hover:bg-surface-container-low transition-colors">
                       <td className="p-4 text-center">
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           className="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary"
                           checked={selectedCustomers.includes(customer._id)}
                           onChange={() => handleSelectOne(customer._id)}
@@ -232,7 +232,7 @@ const CustomersPage = () => {
                       <td className="p-4 text-right font-bold text-on-surface">Rs {customer.totalSpent?.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 }) || '0'}</td>
                       <td className="p-4 text-right">
                         <div className="flex justify-end gap-2">
-                          <button 
+                          <button
                             onClick={() => handleDeleteCustomer(customer._id)}
                             className="p-2 text-on-surface-variant hover:text-error transition-colors"
                           >

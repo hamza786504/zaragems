@@ -59,7 +59,7 @@ const AddCustomerPage = () => {
       <Sidebar />
       <Header />
 
-      <main className="p-lg bg-surface-container-lowest min-h-screen text-on-surface">
+      <main className="p-0 md:p-lg bg-surface-container-lowest min-h-screen text-on-surface">
         <div className="max-w-3xl mx-auto">
           {/* Header */}
           <div className="mb-6">
@@ -72,9 +72,9 @@ const AddCustomerPage = () => {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* General Info Card */}
-            <div className="bg-white border border-outline-variant p-6 rounded-xl shadow-sm space-y-4">
+            <div className="bg-white border border-outline-variant p-3 md:p-6 rounded-xl shadow-sm space-y-4">
               <h3 className="font-headline-md text-headline-md font-bold mb-2">General Information</h3>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-label-md font-bold text-on-surface-variant mb-2">
@@ -133,7 +133,7 @@ const AddCustomerPage = () => {
 
               <div>
                 <label className="block text-label-md font-bold text-on-surface-variant mb-2">Status</label>
-                <select 
+                <select
                   className="w-full border border-outline-variant rounded-lg p-3 bg-white text-on-surface focus:outline-none focus:ring-1 focus:ring-primary"
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
@@ -146,7 +146,7 @@ const AddCustomerPage = () => {
             </div>
 
             {/* Address Card */}
-            <div className="bg-white border border-outline-variant p-6 rounded-xl shadow-sm space-y-4">
+            <div className="bg-white border border-outline-variant p-3 md:p-6 rounded-xl shadow-sm space-y-4">
               <h3 className="font-headline-md text-headline-md font-bold mb-2">Address</h3>
               <div>
                 <label className="block text-label-md font-bold text-on-surface-variant mb-2">Shipping & Billing Address</label>

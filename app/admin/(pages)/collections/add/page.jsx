@@ -87,7 +87,7 @@ const AddCollectionPage = () => {
       <Sidebar />
       <Header />
 
-      <main className="p-lg bg-surface-container-lowest min-h-screen text-on-surface">
+      <main className="p-0 md:p-lg bg-surface-container-lowest min-h-screen text-on-surface">
         <div className="max-w-3xl mx-auto">
           {/* Header */}
           <div className="mb-6">
@@ -100,7 +100,7 @@ const AddCollectionPage = () => {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Details Card */}
-            <div className="bg-white border border-outline-variant p-6 rounded-xl shadow-sm space-y-4">
+            <div className="bg-white border border-outline-variant p-3 md:p-6 rounded-xl shadow-sm space-y-4">
               <h3 className="font-headline-md text-headline-md font-bold mb-2">Collection details</h3>
               <div>
                 <label className="block text-label-md font-bold text-on-surface-variant mb-2">
@@ -142,9 +142,9 @@ const AddCollectionPage = () => {
             </div>
 
             {/* Image Card */}
-            <div className="bg-white border border-outline-variant p-6 rounded-xl shadow-sm space-y-4">
+            <div className="bg-white border border-outline-variant p-3 md:p-6 rounded-xl shadow-sm space-y-4">
               <h3 className="font-headline-md text-headline-md font-bold mb-2">Collection Image</h3>
-              
+
               <div className="max-w-[170px]">
                 {image ? (
                   <div className="relative aspect-video rounded-lg border border-outline-variant overflow-hidden group bg-surface-container-low">
@@ -171,11 +171,11 @@ const AddCollectionPage = () => {
                         <span className="text-[11px] text-on-surface-variant mt-1">Recommended aspect ratio: 16:9</span>
                       </>
                     )}
-                    <input 
-                      type="file" 
-                      className="hidden" 
-                      accept="image/*" 
-                      onChange={handleImageUpload} 
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleImageUpload}
                       disabled={uploading}
                     />
                   </label>

@@ -6,7 +6,7 @@ import Link from 'next/link';
 
 export default function SlotShell({ title, subtitle, loading, refreshing, lastUpdated, onRefresh, actionLink, actionLabel, children, className = '' }) {
   return (
-    <div className={`bg-white rounded-xl border border-outline-variant p-lg shadow-sm ${className}`}>
+    <div className={`bg-white rounded-xl border border-outline-variant p-3 md:p-lg shadow-sm ${className}`}>
       <div className="flex justify-between items-center mb-xl">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">

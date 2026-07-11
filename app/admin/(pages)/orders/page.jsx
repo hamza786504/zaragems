@@ -231,7 +231,7 @@ const OrdersPage = () => {
   return (
     <>
       <div className="flex flex-col h-screen">
-        <main className="flex-1 p-xl">
+        <main className="flex-1 p-0 md:p-xl">
           {/* Header */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-xl">
             <div>

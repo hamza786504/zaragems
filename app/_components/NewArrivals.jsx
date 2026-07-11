@@ -27,7 +27,7 @@ const products = [
         image:
             'https://lh3.googleusercontent.com/aida-public/AB6AXuBF0uGhBqFeiTpot2ewCnoSmQbYCMJCwqsJQxuDYkdu86KQBGstYFXuh3nUBKpe5NK7X_Soi60pirdc1ucUnsZMOFICCM92sWAI3C6hva160neSqlcXeoXXK0X-IhrfJ7YzbA3dkUr3GLsQn2Oa5a2qv07j5cvjLoTSvJiwifBhVnOr4pGpEVU4Shrq5Jq6VkvdV1t9kLE2rQ-i2B-Uk6eynS2d4B1WxE0SRVLN2V8eQ5s1SiA6hTvJWumVrvE22neyQHwMdafWUIcv',
     },
-     {
+    {
         id: 4,
         title: 'Festive Collection',
         slug: 'chiffon',
@@ -50,10 +50,10 @@ export default function NewArrivals() {
     };
 
     return (
-        <section className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-stack-md md:py-stack-lg">
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-gutter lg:gap-16 items-center">
+        <section className="overflow-x-hidden max-w-container-max mx-auto px-1 md:pr-0 md:ps-margin-mobile pt-5 lg:py-1">
+            <div className="flex flex-col lg:flex-row gap-gutter items-center">
                 {/* Left Side: Static Editorial Content */}
-                <div className="md:col-span-5 lg:col-span-4 flex flex-col items-start space-y-6 md:space-y-8 animate-fade-in-up">
+                <div className="w-full lg:w-4/12 flex flex-col items-start space-y-4 md:space-y-6 animate-fade-in-up">
                     <div className="inline-flex items-center px-3 py-1 bg-surface-container-high rounded-full">
                         <span className="text-label-sm font-label-sm text-on-surface-variant tracking-wider uppercase">
                             Established 1994
@@ -67,7 +67,7 @@ export default function NewArrivals() {
                             Timeless Eastern Craftsmanship
                         </p>
                     </div>
-                    <p className="text-body-lg font-body-lg text-on-surface-variant">
+                    <p className="text-body-base font-body-base text-on-surface-variant">
                         Refresh your wardrobe with this week&apos;s new arrivals. Discover the latest trends,
                         collection highlights, and key pieces for the season.
                     </p>
@@ -77,16 +77,16 @@ export default function NewArrivals() {
                 </div>
 
                 {/* Right Side: Product Carousel */}
-                <div className="md:col-span-7 lg:col-span-8 relative group">
+                <div className="w-full lg:w-8/12 relative group">
                     <div
                         ref={carouselRef}
-                        className="flex gap-gutter overflow-x-auto no-scrollbar carousel-container scroll-smooth"
+                        className="flex gap-1 overflow-x-auto no-scrollbar carousel-container scroll-smooth"
                     >
                         {products.map((product) => (
                             <Link
                                 key={product.id}
                                 href={`/collection/${product.slug}`}
-                                className="carousel-item flex-none w-full sm:w-[calc(50%-12px)] lg:w-[calc(33.333%-16px)] group/card cursor-pointer"
+                                className="carousel-item flex-none w-1/2 md:w-1/3 group/card cursor-pointer"
                             >
                                 <div className="relative overflow-hidden aspect-[0.73] bg-surface-container">
                                     <Image
@@ -107,7 +107,7 @@ export default function NewArrivals() {
                     </div>
 
                     {/* Navigation Controls */}
-                    <div className="absolute top-1/2 -translate-y-1/2 -left-4 -right-4 flex justify-between pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="absolute top-1/2 -translate-y-1/2 -left-0 -right-0 flex justify-between pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <button
                             className="pointer-events-auto w-12 h-12 flex items-center justify-center bg-white/90 shadow-lg text-primary hover:bg-secondary hover:text-white transition-all active:scale-95"
                             onClick={() => scrollCarousel('prev')}

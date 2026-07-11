@@ -63,7 +63,7 @@ export default function MetricSlot({ title, fetchKey, icon: Icon, bgColor, textC
   const sparkData = data ? getSparkData(data) : [];
 
   return (
-    <div className="bg-white p-lg rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-all group cursor-pointer relative">
+    <div className="bg-white p-3 md:p-lg rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-all group cursor-pointer relative">
       <div className="flex justify-between items-start mb-md">
         <div>
           <p className="font-label-md text-label-md text-on-surface-variant">{title}</p>

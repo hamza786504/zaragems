@@ -1,99 +1,282 @@
 // components/HeroCarousel.jsx
 'use client';
-import Image from 'next/image';
-import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
 const slides = [
     {
         id: 0,
-        tag: 'Lawn Collection',
-        title: 'The Summer Heritage',
-        description: 'Discover our premium lawn series crafted for comfort and grace.',
-        image:
-            'https://lh3.googleusercontent.com/aida-public/AB6AXuCJQjhsUSgBD77N4rTLqm1PLq06B4ieufRNDSkI2NlOzScX5E4gprl9K9E2eVYOgRJjy6KFmzBPRt1LUOlHav9y70oTAD_qsrquKBLy3ev8ND4yA6rL3IlcB1gtQJzZ51jQ6APai3jZyI75rGiPezuozdowTw_1Rca3yAOdxlZVBtT2pWSIfIjJt55aalHfekqfN7DyxHcfu4Mt13gxisVfFEzXRPQCdtZQcdmwmgQ3geImDkwCEJlHsA',
-    },
-    {
-        id: 1,
-        tag: 'New Arrivals',
-        title: 'Modern Opulence',
-        description: 'The latest curation of exquisite Eastern attire is here.',
-        image:
-            'https://lh3.googleusercontent.com/aida-public/AB6AXuC8zQoMgNt31NxH4LfZqXx02EwdVA-9HJj8z6vQ27QLpU8O49RGWZzvycsG8DT73zjx7ST5FZWHxUxvzkbsrE8VY8H0aK8_oO6npX5gL3pZzXX3m6HLo_lYwXlw3J_wkooOArRwCeC-mcietekVTU0_9smkgAl7Hvw8Flli2GuU0I0_OGFwWXzn8gPIMuc92hhApTAK0-X0CFLedszBjjxmIAPBp9XVclrKKYvaRjEH336ERMLVTyNVig',
-    },
-    {
-        id: 2,
-        tag: 'Handmade Bags',
-        title: 'The Art of the Bag',
-        description: 'Intricately embroidered clutches and potlis for your special occasions.',
-        image:
-            'https://lh3.googleusercontent.com/aida-public/AB6AXuBEyBg8njBeZXmpX8Us-it06OHWgzt1U-i47UijwDaumq4CCjumxl6a_zIoo2TwX5IAZh1mCmxfIR0Sebaa2sl7dBtMsdVq3tkp2c3Bvf08LR75O-A3WQRe910g9CGYpXUFzb8jWK1q6aacdbQNT1lY13V0c4xUxo-t2lp6_5eDnq3jeMEsmoUjAIpL0mnN3ts7eZxtTV8GZzd8swf8r2M6ZuivYjCOH-OhHs2Tcxn81IUzGu0j3XcF8Q',
+        image: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=1400&q=80',
+        color: '#1a2a3a',
     },
 ];
 
 export default function HeroCarousel() {
-    const [currentSlide, setCurrentSlide] = useState(2);
+    const [currentSlide, setCurrentSlide] = useState(0);
 
     useEffect(() => {
+        if (slides.length <= 1) return;
         const interval = setInterval(() => {
             setCurrentSlide((prev) => (prev + 1) % slides.length);
         }, 6000);
         return () => clearInterval(interval);
     }, []);
 
-    const goToSlide = (index) => {
-        setCurrentSlide(index);
-    };
+    const isCarousel = slides.length > 1;
+    const goToSlide = (index) => setCurrentSlide(index);
+    const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+    const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % slides.length);
 
     return (
-        <section className="relative h-screen w-full overflow-hidden bg-surface-container-low">
-            <div className="h-full w-full flex flex-col md:flex-row">
+        <div
+            id="controls-carousel"
+            style={{ position: 'relative', width: '100%' }}
+            data-carousel="static"
+        >
+            {/* Carousel wrapper — explicit height via inline style to guarantee it renders */}
+            <div
+                style={{
+                    position: 'relative',
+                    width: '100%',
+                    height: 'clamp(260px, 55vw, 600px)',
+                    overflow: 'hidden',
+                }}
+            >
                 {slides.map((slide, index) => (
                     <div
                         key={slide.id}
-                        className={`slide-item absolute inset-0 flex flex-col md:flex-row transition-opacity duration-1000 ${
-                            index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
-                        }`}
+                        style={{
+                            position: 'absolute',
+                            inset: 0,
+                            opacity: index === currentSlide ? 1 : 0,
+                            transition: 'opacity 0.8s ease-in-out',
+                            zIndex: index === currentSlide ? 1 : 0,
+                        }}
+                        aria-hidden={index !== currentSlide}
                     >
-                        <div className="w-full md:w-[45%] h-1/2 md:h-full flex flex-col justify-center px-margin-mobile md:px-margin-desktop space-y-6 bg-surface-container-low">
-                            <span className="text-label-md font-label-md text-secondary tracking-widest uppercase">
+                        {/* Background image */}
+                        <img
+                            src={slide.image}
+                            alt={slide.title}
+                            style={{
+                                position: 'absolute',
+                                inset: 0,
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                                display: 'block',
+                            }}
+                        />
+
+                        {/* Gradient overlay */}
+                        <div
+                            style={{
+                                position: 'absolute',
+                                inset: 0,
+                                background:
+                                    'linear-gradient(to right, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.2) 60%, transparent 100%)',
+                            }}
+                        />
+
+                        {/* Text content */}
+                        <div
+                            style={{
+                                position: 'absolute',
+                                inset: 0,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'center',
+                                maxWidth: '900px',
+                                margin: '0 auto',
+                                padding: '0 2rem',
+                            }}
+                        >
+                            <span
+                                style={{
+                                    color: 'rgba(255,255,255,0.85)',
+                                    fontSize: '0.875rem',
+                                    fontWeight: 500,
+                                    letterSpacing: '0.12em',
+                                    textTransform: 'uppercase',
+                                    marginBottom: '0.75rem',
+                                    display: 'block',
+                                }}
+                            >
                                 {slide.tag}
                             </span>
-                            <h1 className="text-display-lg-mobile md:text-display-xl font-headline-xs font-bold text-primary leading-tight">
+                            <h2
+                                style={{
+                                    color: '#ffffff',
+                                    fontSize: 'clamp(1.75rem, 5vw, 3.5rem)',
+                                    fontWeight: 700,
+                                    lineHeight: 1.15,
+                                    marginBottom: '1rem',
+                                    fontFamily: 'var(--font-eb-garamond), serif',
+                                }}
+                            >
                                 {slide.title}
-                            </h1>
-                            <p className="text-body-lg font-body-lg text-on-surface-variant">
+                            </h2>
+                            <p
+                                style={{
+                                    color: 'rgba(255,255,255,0.88)',
+                                    fontSize: 'clamp(0.875rem, 1.5vw, 1.125rem)',
+                                    maxWidth: '32rem',
+                                    lineHeight: 1.6,
+                                }}
+                            >
                                 {slide.description}
                             </p>
-                            <Link href="/grocery" className="text-sm group bg-primary text-on-primary px-6 py-4 font-label-xs uppercase tracking-[0.2em] w-fit transition-all duration-300 hover:bg-primary-container hover:scale-[1.02]">
-                                EXPLORE COLLECTION
-                            </Link>
-                        </div>
-                        <div className="w-full md:w-[55%] h-1/2 md:h-full">
-                            <Image
-                                alt={slide.tag}
-                                className="w-full h-full object-cover"
-                                src={slide.image}
-                                width={800}
-                                height={600}
-                            />
                         </div>
                     </div>
                 ))}
+
+                {/* Slide indicators — only shown when multiple slides exist */}
+                {isCarousel && (
+                <div
+                    style={{
+                        position: 'absolute',
+                        bottom: '1.25rem',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        display: 'flex',
+                        gap: '0.625rem',
+                        zIndex: 10,
+                    }}
+                >
+                    {slides.map((_, index) => (
+                        <button
+                            key={index}
+                            type="button"
+                            aria-current={index === currentSlide ? 'true' : 'false'}
+                            aria-label={`Slide ${index + 1}`}
+                            onClick={() => goToSlide(index)}
+                            style={{
+                                width: index === currentSlide ? '1.75rem' : '0.625rem',
+                                height: '0.625rem',
+                                borderRadius: '9999px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                background:
+                                    index === currentSlide
+                                        ? '#ffffff'
+                                        : 'rgba(255,255,255,0.5)',
+                                transition: 'all 0.3s ease',
+                                padding: 0,
+                            }}
+                        />
+                    ))}
+                </div>
+                )}
             </div>
 
-            {/* Dots */}
-            <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex space-x-4 z-20">
-                {slides.map((_, index) => (
-                    <button
-                        key={index}
-                        className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                            index === currentSlide ? 'bg-primary' : 'bg-primary/20'
-                        }`}
-                        onClick={() => goToSlide(index)}
-                    />
-                ))}
-            </div>
-        </section>
+            {/* Previous button — only shown when multiple slides exist */}
+            {isCarousel && (
+            <button
+                type="button"
+                aria-label="Previous slide"
+                onClick={prevSlide}
+                style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    zIndex: 10,
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 1rem',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                }}
+            >
+                <span
+                    style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '2.5rem',
+                        height: '2.5rem',
+                        borderRadius: '9999px',
+                        background: 'rgba(255,255,255,0.25)',
+                        backdropFilter: 'blur(4px)',
+                        transition: 'background 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.45)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.25)')}
+                >
+                    <svg
+                        style={{ width: '1.25rem', height: '1.25rem', color: '#fff' }}
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2.5"
+                            d="m15 19-7-7 7-7"
+                        />
+                    </svg>
+                </span>
+            </button>
+            )}
+
+            {/* Next button — only shown when multiple slides exist */}
+            {isCarousel && (
+            <button
+                type="button"
+                aria-label="Next slide"
+                onClick={nextSlide}
+                style={{
+                    position: 'absolute',
+                    top: 0,
+                    right: 0,
+                    zIndex: 10,
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 1rem',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                }}
+            >
+                <span
+                    style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '2.5rem',
+                        height: '2.5rem',
+                        borderRadius: '9999px',
+                        background: 'rgba(255,255,255,0.25)',
+                        backdropFilter: 'blur(4px)',
+                        transition: 'background 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.45)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.25)')}
+                >
+                    <svg
+                        style={{ width: '1.25rem', height: '1.25rem', color: '#fff' }}
+                        aria-hidden="true"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2.5"
+                            d="m9 5 7 7-7 7"
+                        />
+                    </svg>
+                </span>
+            </button>
+            )}
+        </div>
     );
 }

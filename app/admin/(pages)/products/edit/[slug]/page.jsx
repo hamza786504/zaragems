@@ -12,7 +12,7 @@ import Button from '../../../../../_components/Admin/Button';
 const EditProductPage = () => {
   const router = useRouter();
   const params = useParams();
-  const id = params?.slug; // The dynamic route slug represents product ID
+  const id = params?.slug;
 
   const [activeTab, setActiveTab] = useState('General');
   const [collections, setCollections] = useState([]);
@@ -31,7 +31,7 @@ const EditProductPage = () => {
   const [SKU, setSKU] = useState('');
   const [barcode, setBarcode] = useState('');
   const [inventory, setInventory] = useState('0');
-  const [status, setStatus] = useState('active'); // active, draft, archived
+  const [status, setStatus] = useState('active');
   const [collectionId, setCollectionId] = useState('');
   const [vendor, setVendor] = useState('');
   const [productType, setProductType] = useState('');
@@ -45,14 +45,12 @@ const EditProductPage = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch collections
         const colRes = await fetch('/api/collections');
         const colData = await colRes.json();
         if (colData.success) {
           setCollections(colData.collections);
         }
 
-        // Fetch product
         if (id) {
           const prodRes = await fetch(`/api/products/${id}`);
           const prodData = await prodRes.json();
@@ -98,7 +96,7 @@ const EditProductPage = () => {
       for (const file of files) {
         const formData = new FormData();
         formData.append('file', file);
-        
+
         const res = await fetch('/api/upload', {
           method: 'POST',
           body: formData,
@@ -203,7 +201,7 @@ const EditProductPage = () => {
       <>
         <Sidebar />
         <Header />
-        <main className="ml-[240px] pt-16 min-h-screen flex flex-col items-center justify-center bg-surface-container-lowest">
+        <main className="relative pb-0 min-h-screen flex flex-col items-center justify-center bg-surface-container-lowest text-on-surface">
           <Loader2 className="animate-spin text-primary mb-2" size={32} />
           <p className="text-body-md text-on-surface-variant font-medium">Loading product details...</p>
         </main>
@@ -216,9 +214,9 @@ const EditProductPage = () => {
       <Sidebar />
       <Header />
 
-      <main className="pt-0 pb-32 min-h-screen bg-surface-container-lowest text-on-surface">
+      <main className="relative pb-0 min-h-screen bg-surface-container-lowest text-on-surface">
         {/* Header Section */}
-        <div className="max-w-[1200px] mx-auto px-6 py-6 border-b border-outline-variant mb-6">
+        <div className="max-w-[1200px] mx-auto px-0 md:px-6 py-2 md:py-6 border-b border-outline-variant mb-6">
           <div className="flex items-center gap-2 text-on-surface-variant mb-2">
             <Link className="text-label-md hover:text-primary transition-colors flex items-center gap-1" href="/admin/products">
               <ArrowLeft size={14} /> Products
@@ -229,9 +227,8 @@ const EditProductPage = () => {
           <div className="flex justify-between items-center">
             <h2 className="text-headline-lg font-headline-lg font-bold">Edit: {title}</h2>
             <div className="flex items-center gap-2">
-              <span className={`px-3 py-1 text-label-md rounded-full font-bold uppercase ${
-                status === 'active' ? 'bg-primary-container/20 text-primary' : 'bg-surface-variant text-on-surface-variant'
-              }`}>
+              <span className={`px-3 py-1 text-label-md rounded-full font-bold uppercase ${status === 'active' ? 'bg-primary-container/20 text-primary' : 'bg-surface-variant text-on-surface-variant'
+                }`}>
                 {status}
               </span>
               {productSlug && (
@@ -250,17 +247,16 @@ const EditProductPage = () => {
         </div>
 
         {/* Form Content */}
-        <div className="max-w-[1200px] mx-auto px-6">
+        <div className="max-w-[1200px] mx-auto px-0 md:px-6">
           {/* Tabs */}
           <div className="flex border-b border-outline-variant mb-6 overflow-x-auto">
             {tabs.map((tab) => (
               <button
                 key={tab}
-                className={`px-6 py-3 font-label-md text-label-md transition-colors whitespace-nowrap ${
-                  activeTab === tab
-                    ? 'border-b-2 border-primary text-primary font-bold'
-                    : 'text-on-surface-variant hover:text-on-surface'
-                }`}
+                className={`px-6 py-3 font-label-md text-label-md transition-colors whitespace-nowrap ${activeTab === tab
+                  ? 'border-b-2 border-primary text-primary font-bold'
+                  : 'text-on-surface-variant hover:text-on-surface'
+                  }`}
                 onClick={() => setActiveTab(tab)}
               >
                 {tab}
@@ -274,7 +270,7 @@ const EditProductPage = () => {
               {/* Left Side */}
               <div className="col-span-12 lg:col-span-8 space-y-6">
                 {/* Title & Description */}
-                <section className="bg-white border border-outline-variant p-6 rounded-xl shadow-sm space-y-4">
+                <section className="bg-white border border-outline-variant p-3 md:p-6 rounded-xl shadow-sm space-y-4">
                   <div>
                     <label className="block text-label-md font-bold text-on-surface-variant mb-2">
                       Title <span className="text-error">*</span>
@@ -302,10 +298,10 @@ const EditProductPage = () => {
                 </section>
 
                 {/* Media */}
-                <section className="bg-white border border-outline-variant p-6 rounded-xl shadow-sm">
+                <section className="bg-white border border-outline-variant p-3 md:p-6 rounded-xl shadow-sm">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="font-headline-md text-headline-md font-bold">Media</h3>
-                    <button 
+                    <button
                       type="button"
                       onClick={handleAddImageUrl}
                       className="text-primary font-label-md hover:underline flex items-center gap-1"
@@ -313,13 +309,12 @@ const EditProductPage = () => {
                       <LinkIcon size={14} /> Add from URL
                     </button>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    {/* Image Cards */}
                     {images.map((url, idx) => (
                       <div key={idx} className="relative aspect-square rounded-lg border border-outline-variant overflow-hidden group bg-surface-container-low">
                         <Image src={url} alt="product" className="w-full h-full object-cover" width={200} height={200} />
-                        <button 
+                        <button
                           type="button"
                           onClick={() => handleRemoveImage(idx)}
                           className="absolute top-1 right-1 p-1 bg-black/60 hover:bg-black text-white rounded-full transition-colors"
@@ -329,7 +324,6 @@ const EditProductPage = () => {
                       </div>
                     ))}
 
-                    {/* Drag and Drop / Select Card */}
                     <label className="aspect-square rounded-lg border-2 border-dashed border-outline-variant hover:border-primary flex flex-col items-center justify-center p-4 cursor-pointer hover:bg-surface-container-low transition-all">
                       {uploading ? (
                         <>
@@ -343,12 +337,12 @@ const EditProductPage = () => {
                           <span className="text-[10px] text-on-surface-variant mt-1">Sanity Storage</span>
                         </>
                       )}
-                      <input 
-                        type="file" 
-                        className="hidden" 
-                        accept="image/*" 
-                        multiple 
-                        onChange={handleImageUpload} 
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageUpload}
                         disabled={uploading}
                       />
                     </label>
@@ -356,25 +350,25 @@ const EditProductPage = () => {
                 </section>
 
                 {/* Options (Sizes/Colors) */}
-                <section className="bg-white border border-outline-variant p-6 rounded-xl shadow-sm space-y-4">
+                <section className="bg-white border border-outline-variant p-3 md:p-6 rounded-xl shadow-sm space-y-4">
                   <h3 className="font-headline-md text-headline-md font-bold">Product Options</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-label-md font-bold text-on-surface-variant mb-2">Sizes (comma separated)</label>
-                      <input 
-                        type="text" 
-                        className="w-full border border-outline-variant rounded-lg p-2.5 bg-white text-on-surface" 
-                        placeholder="e.g. S, M, L, XL" 
+                      <input
+                        type="text"
+                        className="w-full border border-outline-variant rounded-lg p-2.5 bg-white text-on-surface"
+                        placeholder="e.g. S, M, L, XL"
                         value={sizes}
                         onChange={(e) => setSizes(e.target.value)}
                       />
                     </div>
                     <div>
                       <label className="block text-label-md font-bold text-on-surface-variant mb-2">Colors (comma separated)</label>
-                      <input 
-                        type="text" 
-                        className="w-full border border-outline-variant rounded-lg p-2.5 bg-white text-on-surface" 
-                        placeholder="e.g. Black, White" 
+                      <input
+                        type="text"
+                        className="w-full border border-outline-variant rounded-lg p-2.5 bg-white text-on-surface"
+                        placeholder="e.g. Black, White"
                         value={colors}
                         onChange={(e) => setColors(e.target.value)}
                       />
@@ -386,9 +380,9 @@ const EditProductPage = () => {
               {/* Right Side */}
               <div className="col-span-12 lg:col-span-4 space-y-6">
                 {/* Status */}
-                <section className="bg-white border border-outline-variant p-6 rounded-xl shadow-sm">
+                <section className="bg-white border border-outline-variant p-3 md:p-6 rounded-xl shadow-sm">
                   <label className="block text-label-md font-bold text-on-surface-variant mb-2">Product Status</label>
-                  <select 
+                  <select
                     className="w-full border border-outline-variant rounded-lg p-2.5 bg-white text-on-surface"
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
@@ -400,7 +394,7 @@ const EditProductPage = () => {
                 </section>
 
                 {/* Organization */}
-                <section className="bg-white border border-outline-variant p-6 rounded-xl shadow-sm space-y-4">
+                <section className="bg-white border border-outline-variant p-3 md:p-6 rounded-xl shadow-sm space-y-4">
                   <h3 className="font-headline-md text-headline-md font-bold">Organization</h3>
                   <div>
                     <label className="block text-label-md font-bold text-on-surface-variant mb-2">Collection</label>
@@ -438,7 +432,7 @@ const EditProductPage = () => {
                 </section>
 
                 {/* Pricing */}
-                <section className="bg-white border border-outline-variant p-6 rounded-xl shadow-sm space-y-4">
+                <section className="bg-white border border-outline-variant p-3 md:p-6 rounded-xl shadow-sm space-y-4">
                   <h3 className="font-headline-md text-headline-md font-bold">Pricing</h3>
                   <div>
                     <label className="block text-label-md font-bold text-on-surface-variant mb-2">Price ($)</label>
@@ -482,7 +476,7 @@ const EditProductPage = () => {
                   <h3 className="font-headline-md text-headline-md font-bold">Product Variants</h3>
                   <p className="text-body-sm text-on-surface-variant mt-1">Specify variations and stock counts</p>
                 </div>
-                <Button 
+                <Button
                   onClick={handleAddVariant}
                   size="sm"
                 >
@@ -553,7 +547,7 @@ const EditProductPage = () => {
           )}
 
           {activeTab === 'Inventory' && (
-            <section className="bg-white border border-outline-variant p-6 rounded-xl shadow-sm space-y-4">
+            <section className="bg-white border border-outline-variant p-3 md:p-6 rounded-xl shadow-sm space-y-4">
               <h3 className="font-headline-md text-headline-md font-bold">Inventory Settings</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
@@ -592,27 +586,31 @@ const EditProductPage = () => {
         </div>
 
         {/* Footer Actions */}
-        <footer className="fixed bottom-0 right-0 w-[calc(100%-240px)] bg-surface-container border-t border-outline-variant p-4 z-40 flex justify-between items-center shadow-lg">
-          <Button 
+        <footer className="sticky bottom-0 w-full bg-surface-container border-t border-outline-variant py-2 px-2 sm:px-4 sm:pt-3 z-40 flex justify-between items-center shadow-lg mt-5">
+          <Button
             href="/admin/products"
             variant="outline"
+            className="text-xs sm:text-sm px-2.5 py-1.5 sm:px-4 sm:py-2"
           >
             Cancel
           </Button>
-          <div className="flex items-center gap-3">
-            <Button 
+          <div className="flex items-center gap-1.5 sm:gap-3">
+            <Button
               disabled={saving}
               onClick={() => handleSave('draft')}
               variant="outline"
+              className="text-xs sm:text-sm px-2.5 py-1.5 sm:px-4 sm:py-2"
             >
-              Save as Draft
+              <span className="sm:hidden">Draft</span>
+              <span className="hidden sm:inline">Save as Draft</span>
             </Button>
-            <Button 
+            <Button
               disabled={saving}
               onClick={() => handleSave()}
-              icon={saving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+              icon={saving ? <Loader2 className="animate-spin" size={14} /> : <Save size={14} />}
+              className="text-xs sm:text-sm px-2.5 py-1.5 sm:px-4 sm:py-2"
             >
-              Save Product
+              <span className="hidden sm:inline">Update Product</span>
             </Button>
           </div>
         </footer>

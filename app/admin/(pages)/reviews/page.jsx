@@ -167,7 +167,7 @@ const ReviewsPage = () => {
       <Sidebar />
       <Header />
 
-      <main className="p-lg bg-surface-container-lowest min-h-screen text-on-surface">
+      <main className="p-0 md:p-lg bg-surface-container-lowest min-h-screen text-on-surface">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-xl gap-4">
           <div>

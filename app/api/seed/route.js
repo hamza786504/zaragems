@@ -6,7 +6,7 @@ export async function POST() {
   try {
     // 1. Clear existing data
     await client.delete({
-      query: '*[_type in ["collection", "product", "customer", "review", "order", "menu"]]',
+      query: '*[_type in ["collection", "product", "customer", "review", "order", "menu", "siteSettings"]]',
     });
 
     // 2. Create Collections matching the frontend fabrics
@@ -184,6 +184,27 @@ export async function POST() {
     await Promise.all([
       client.create({ _type: 'menu', name: 'Main Menu', handle: 'main-menu', position: 'header', items: mainMenuItems }),
       client.create({ _type: 'menu', name: 'Footer Links', handle: 'footer-links', position: 'footer', items: footerMenuItems }),
+      client.create({
+        _type: 'siteSettings',
+        storeName: 'Zaragems',
+        legalName: 'Zaragems Fashion House',
+        industry: 'Fashion',
+        senderEmail: 'hello@zaragems.com',
+        accountEmail: 'info@zaragems.com',
+        timezone: '(GMT+05:00) Pakistan Standard Time',
+        unitSystem: 'Metric system (kg, cm, etc.)',
+        orderPrefix: '#ZAR-',
+        orderSuffix: '',
+        address: '',
+        apartment: '',
+        city: '',
+        zipCode: '',
+        country: 'Pakistan',
+        logo: null,
+        logoAlt: '',
+        typography: { headingFont: 'EB Garamond', bodyFont: 'Manrope' },
+        theme: null,
+      }),
     ]);
 
     return NextResponse.json(

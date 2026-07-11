@@ -4,10 +4,14 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { FaFacebook, FaInstagram, FaTiktok, FaWhatsapp } from 'react-icons/fa';
 import Image from 'next/image';
+import { useSiteSettings } from '../store/siteSettingsContext';
 
 export default function Footer() {
     const [isOpen, setIsOpen] = useState(false);
     const [message, setMessage] = useState('');
+    const settings = useSiteSettings();
+    const logoSrc = settings?.logoUrl || '/logo.png';
+    const storeName = settings?.storeName || 'Zaragems';
 
     const handleWhatsAppSubmit = (e) => {
         e.preventDefault();
@@ -28,7 +32,7 @@ export default function Footer() {
             href="/"
             className="text-headline-sm font-headline-sm text-primary mb-6 block uppercase tracking-widest"
         >
-            <Image src="/logo.png" width="150" height="100" alt="logo" />
+            <Image src={logoSrc} width="150" height="100" alt={storeName} />
         </Link>
         <p className="text-body-lg font-body-md text-on-surface-variant leading-relaxed">
             Dedicated to the art of luxury Eastern wear, blending centuries-old traditions
@@ -166,7 +170,7 @@ export default function Footer() {
 </div>
             <div className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop text-center md:text-left">
                 <p className="text-label-sm font-label-sm text-on-tertiary-container">
-                    &copy; 2024 Zaragems. Crafting Heritage with Contemporary Luxury.
+                    &copy; 2024 {storeName}. Crafting Heritage with Contemporary Luxury.
                 </p>
             </div>
         </footer>

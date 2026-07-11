@@ -25,7 +25,7 @@ export default async function AdminLayout({ children }) {
         <div style={{ "backgroundColor": "#f6fafe" }} className="admin-layout bg-surface text-on-surface selection:bg-secondary-container selection:text-on-secondary-container min-h-screen">
             <Sidebar />
             <Header />
-            <main className="ml-0 lg:ml-60 pt-20 min-h-screen p-lg bg-surface-container-lowest">
+            <main className="ml-0 lg:ml-60 pt-20 min-h-screen px-3 md:pt-20 md:p-sm bg-surface-container-lowest">
               {children}
             </main>
         </div>

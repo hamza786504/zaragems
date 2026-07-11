@@ -7,7 +7,7 @@ const PKR = (val) => `Rs ${Number(val).toLocaleString(undefined, { minimumFracti
 
 export default function RecentCustomersClient({ recentCustomers }) {
   return (
-    <div className="bg-white rounded-xl border border-outline-variant p-lg shadow-sm">
+    <div className="bg-white rounded-xl border border-outline-variant p-3 md:p-lg shadow-sm">
       <div className="flex justify-between items-center mb-xl">
         <div>
           <h6 className="font-headline-md text-headline-md text-on-surface">Recent Customers</h6>

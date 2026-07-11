@@ -132,7 +132,7 @@ const ProductsPage = () => {
       <Header />
       
       {/* Main Content Canvas */}
-      <main className="mt-0 p-lg bg-surface-container-lowest min-h-screen">
+      <main className="mt-0 p-0 md:p-lg bg-surface-container-lowest min-h-screen">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-xl gap-4">
           <div>

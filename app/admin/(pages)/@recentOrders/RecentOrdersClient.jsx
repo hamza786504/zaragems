@@ -35,7 +35,7 @@ const getStatusBadge = (status) => {
 export default function RecentOrdersClient({ recentOrders }) {
   return (
     <div className="bg-white rounded-xl border border-outline-variant shadow-sm overflow-hidden flex flex-col">
-      <div className="p-lg border-b border-outline-variant flex justify-between items-center">
+      <div className="p-3 md:p-lg border-b border-outline-variant flex justify-between items-center">
         <div>
           <h6 className="font-headline-md text-headline-md text-on-surface">Recent Orders</h6>
           <p className="text-body-sm text-on-surface-variant mt-1">Latest transactions</p>

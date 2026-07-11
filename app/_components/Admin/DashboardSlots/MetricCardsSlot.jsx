@@ -59,7 +59,7 @@ function MetricCard({ title, icon: Icon, bgColor, textColor, getValue, getSubtit
   const sparkData = data ? getSparkData(data) : [];
 
   return (
-    <div className="bg-white p-lg rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-all group cursor-pointer relative">
+    <div className="bg-white p-3 md:p-lg rounded-xl border border-outline-variant shadow-sm hover:shadow-md transition-all group cursor-pointer relative">
       <div className="flex justify-between items-start mb-md">
         <div>
           <p className="font-label-md text-label-md text-on-surface-variant">{title}</p>
@@ -145,7 +145,7 @@ export default function MetricCardsSlot({ intervalMs = 15000 }) {
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-lg">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-lg">
       {cards.map((card) => (
         <MetricCard key={card.title} {...card} intervalMs={intervalMs} />
       ))}
