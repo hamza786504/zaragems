@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 export default function CartDrawer({ isOpen, onClose, cartItems = [], onUpdateQuantity, onRemoveItem }) {
     const router = useRouter();
@@ -216,7 +217,8 @@ export default function CartDrawer({ isOpen, onClose, cartItems = [], onUpdateQu
                         </div>
                         
                         {/* Checkout Button - Close drawer then navigate */}
-                        <button 
+                        <Link
+                        href="/checkout" 
                             onClick={() => handleNavigationClick('/checkout')}
                             className="w-full bg-primary text-white py-3 text-sm font-label-md tracking-widest border border-secondary hover:bg-primary-container transition-all flex items-center justify-center gap-2 group"
                         >
@@ -224,15 +226,16 @@ export default function CartDrawer({ isOpen, onClose, cartItems = [], onUpdateQu
                             <span className="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform">
                                 arrow_forward
                             </span>
-                        </button>
+                        </Link>
                         
                         {/* View Cart Button - Close drawer then navigate */}
-                        <button
+                        <Link
+                        href="/cart"
                             onClick={() => handleNavigationClick('/cart')}
                             className="block w-full text-center text-xs text-secondary hover:text-primary underline underline-offset-4 decoration-secondary/30 transition-all"
                         >
                             View Cart
-                        </button>
+                        </Link>
 
                         <div className="flex items-center justify-center gap-1.5 text-on-surface-variant/40 pt-1">
                             <span className="material-symbols-outlined text-[14px]">verified_user</span>

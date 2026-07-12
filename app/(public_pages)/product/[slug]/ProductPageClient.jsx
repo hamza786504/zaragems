@@ -222,7 +222,7 @@ export default function ProductPageClient({ initialProduct }) {
                     <header className="flex flex-col gap-2">
                         <p className="text-label-md text-secondary uppercase tracking-[0.2em]">{product.productType || 'General'}</p>
                         <h1 className="font-headline-lg text-display-lg-mobile md:text-headline-lg text-primary leading-tight">{product.title}</h1>
-                        <p className="text-headline-sm font-headline-sm text-secondary">${product.price}</p>
+                        <p className="text-headline-sm font-headline-sm text-secondary">{product.price} Pkr</p>
                     </header>
 
                     <div className="flex flex-col gap-6">
@@ -561,7 +561,7 @@ export default function ProductPageClient({ initialProduct }) {
                             View Collection
                         </Link>
                     </div>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 gap-y-6">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-1 gap-y-6">
                         {relatedProducts.map((item) => (
                             <ProductCard
                                 key={item._id}

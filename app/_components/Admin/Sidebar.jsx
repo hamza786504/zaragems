@@ -5,9 +5,14 @@ import { usePathname } from 'next/navigation'
 import React from 'react'
 import { adminNavItems, SETTINGS_DEFAULT_HREF } from './adminNav';
 import SettingsSubNav from './SettingsSubNav';
+import Image from 'next/image';
+import { useSiteSettings } from '../../store/siteSettingsContext';
 
 function Sidebar() {
   const pathname = usePathname();
+    const settings = useSiteSettings();
+    const logoSrc = settings?.logoUrl || '/logo.png';
+    const storeName = settings?.storeName || 'Zaragems';
 
   // While on any /admin/settings/* route we reveal the Settings sub-menu
   // instead of the main nav (with a cross-slide animation).
@@ -32,12 +37,7 @@ function Sidebar() {
       {/* SideNavBar — desktop only (hidden on mobile, revealed via the hamburger drawer in Header) */}
       <aside className="hidden lg:flex w-60 h-screen fixed left-0 top-0 bg-surface-container-low dark:bg-surface-container-lowest border-r border-outline-variant flex-col z-50">
         <div className="p-lg">
-          <h1 className="font-headline-md text-headline-md font-bold text-on-surface">
-            Merchant Admin
-          </h1>
-          <p className="font-body-sm text-body-sm text-on-surface-variant">
-            Manage your store
-          </p>
+          <Image src={logoSrc} width="80" height="40" alt={storeName}  />
         </div>
 
         {/* Nav area — two stacked layers that cross-slide when toggling the

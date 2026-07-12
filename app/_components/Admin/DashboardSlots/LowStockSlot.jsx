@@ -31,10 +31,18 @@ export default function LowStockSlot({ intervalMs = 20000 }) {
               </div>
               <div>
                 <p className="font-label-md text-on-surface truncate max-w-35">{product.title}</p>
-                <p className="text-body-sm text-on-surface-variant">{product.inventory === 0 ? 'Out of stock' : `${product.inventory} left`}</p>
+                <p className="text-body-sm text-on-surface-variant">
+                  {product.inventory === null || product.inventory === undefined
+                    ? 'Untracked'
+                    : product.inventory === 0
+                    ? 'Out of stock'
+                    : `${product.inventory} left`}
+                </p>
               </div>
             </div>
-            <span className={`font-label-md ${product.inventory === 0 ? 'text-error' : 'text-warning'}`}>{product.inventory}</span>
+            <span className={`font-label-md ${product.inventory === 0 ? 'text-error' : 'text-warning'}`}>
+              {product.inventory ?? '—'}
+            </span>
           </div>
         )) : (
           <div className="text-center py-lg text-on-surface-variant">

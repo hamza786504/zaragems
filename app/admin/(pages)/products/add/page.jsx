@@ -25,7 +25,7 @@ const AddProductPage = () => {
   const [costPerItem, setCostPerItem] = useState('');
   const [SKU, setSKU] = useState('');
   const [barcode, setBarcode] = useState('');
-  const [inventory, setInventory] = useState('0');
+  const [inventory, setInventory] = useState('untracked');
   const [status, setStatus] = useState('active'); // active, draft, archived
   const [collectionId, setCollectionId] = useState('');
   const [vendor, setVendor] = useState('');
@@ -132,7 +132,7 @@ const AddProductPage = () => {
       costPerItem: costPerItem ? Number(costPerItem) : undefined,
       SKU,
       barcode,
-      inventory: Number(inventory),
+      inventory: inventory === 'untracked' ? null : Number(inventory),
       status: productStatus,
       collectionId: collectionId || null,
       vendor,
@@ -516,15 +516,50 @@ const AddProductPage = () => {
                     onChange={(e) => setBarcode(e.target.value)}
                   />
                 </div>
-                <div>
-                  <label className="block text-label-md font-bold text-on-surface-variant mb-2">Quantity In Stock</label>
-                  <input
-                    className="w-full border border-outline-variant rounded-lg p-2.5 bg-white text-on-surface"
-                    type="number"
-                    placeholder="0"
-                    value={inventory}
-                    onChange={(e) => setInventory(e.target.value)}
-                  />
+                <div className="md:col-span-3">
+                  <label className="block text-label-md font-bold text-on-surface-variant mb-2">Inventory Tracking</label>
+                  <div className="flex gap-3 mb-3">
+                    <button
+                      type="button"
+                      onClick={() => setInventory('untracked')}
+                      className={`px-4 py-2 rounded-lg border text-label-md font-semibold transition-colors ${
+                        inventory === 'untracked'
+                          ? 'bg-primary text-white border-primary'
+                          : 'border-outline-variant text-on-surface-variant hover:border-primary'
+                      }`}
+                    >
+                      Don&apos;t track inventory
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInventory(inventory === 'untracked' ? '0' : inventory)}
+                      className={`px-4 py-2 rounded-lg border text-label-md font-semibold transition-colors ${
+                        inventory !== 'untracked'
+                          ? 'bg-primary text-white border-primary'
+                          : 'border-outline-variant text-on-surface-variant hover:border-primary'
+                      }`}
+                    >
+                      Track quantity
+                    </button>
+                  </div>
+                  {inventory !== 'untracked' && (
+                    <div>
+                      <label className="block text-label-md font-bold text-on-surface-variant mb-2">Quantity In Stock</label>
+                      <input
+                        className="w-full border border-outline-variant rounded-lg p-2.5 bg-white text-on-surface"
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={inventory}
+                        onChange={(e) => setInventory(e.target.value)}
+                      />
+                    </div>
+                  )}
+                  {inventory === 'untracked' && (
+                    <p className="text-body-sm text-on-surface-variant/70 mt-1">
+                      Customers can always purchase this product regardless of stock.
+                    </p>
+                  )}
                 </div>
               </div>
             </section>

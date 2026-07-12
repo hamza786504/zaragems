@@ -60,7 +60,7 @@ export default function NewArrivals() {
                         </span>
                     </div>
                     <div className="space-y-2">
-                        <h1 className="text-display-lg-mobile md:text-display-lg font-headline-md text-primary leading-tight">
+                        <h1 className="font-bold text-display-lg-mobile md:text-display-lg font-headline-md text-primary leading-tight">
                             NEW IN
                         </h1>
                         <p className="text-secondary font-label-md tracking-widest uppercase opacity-80">

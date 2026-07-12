@@ -24,6 +24,7 @@ const EDITABLE_FIELDS = [
   'logoAlt',
   'typography',
   'theme',
+  'shipping',
 ];
 
 // GROQ projection that returns a stable, cacheable shape for the storefront.
@@ -56,6 +57,13 @@ const DEFAULT_SETTINGS = {
   logoAlt: '',
   typography: { headingFont: 'EB Garamond', bodyFont: 'Manrope' },
   theme: null,
+  shipping: {
+    cod: true,
+    bankDeposit: false,
+    bankDetails: { accountTitle: '', accountNumber: '', bankName: '', iban: '' },
+    standardCharge: 250,
+    freeShippingThreshold: 10000,
+  },
 };
 
 // GET /api/settings/general — public read used by the storefront (cached via CDN + ISR)

@@ -275,8 +275,7 @@ const ProductsPage = () => {
                     <th className="p-4 text-label-md text-on-surface-variant uppercase font-bold">Title</th>
                     <th className="p-4 text-label-md text-on-surface-variant uppercase font-bold">Status</th>
                     <th className="p-4 text-label-md text-on-surface-variant uppercase font-bold">Inventory</th>
-                    <th className="p-4 text-label-md text-on-surface-variant uppercase font-bold">Type</th>
-                    <th className="p-4 text-label-md text-on-surface-variant uppercase font-bold">Vendor</th>
+                    <th className="p-4 text-label-md text-on-surface-variant uppercase font-bold">Collection</th>
                     <th className="p-4 text-label-md text-on-surface-variant uppercase font-bold text-right">Actions</th>
                   </tr>
                 </thead>
@@ -307,9 +306,32 @@ const ProductsPage = () => {
                                                           'bg-error-container/20 text-error'
                         }`}>{product.status}</span>
                       </td>
-                      <td className="p-4 text-body-md text-on-surface">{product.inventory} in stock for {product.variants?.length || 1} variants</td>
-                      <td className="p-4 text-body-md text-on-surface">{product.productType || 'N/A'}</td>
-                      <td className="p-4 text-body-md text-on-surface">{product.vendor || 'N/A'}</td>
+                      <td className="p-4">
+                        {product.inventory === null || product.inventory === undefined ? (
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-surface-container-high text-on-surface-variant">
+                            Untracked
+                          </span>
+                        ) : (
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                            product.inventory === 0
+                              ? 'bg-error-container/20 text-error'
+                              : product.inventory <= 5
+                              ? 'bg-warning-container/20 text-warning'
+                              : 'bg-primary-container/20 text-primary'
+                          }`}>
+                            {product.inventory} in stock
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-4 text-body-md text-on-surface">
+                        {product.collectionId?.name ? (
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-primary-container/20 text-primary">
+                            {product.collectionId.name}
+                          </span>
+                        ) : (
+                          <span className="text-on-surface-variant/40">—</span>
+                        )}
+                      </td>
                       <td className="p-4 text-right">
                         <div className="flex justify-end gap-2">
                           <Link href={`/product/${product.slug}`} target="_blank" rel="noopener noreferrer" className="p-2 text-on-surface-variant hover:text-primary transition-colors" title="View on store">

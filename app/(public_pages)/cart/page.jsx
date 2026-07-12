@@ -234,7 +234,7 @@ const OrderSummary = ({ subtotal, tax, total }) => {
           <span className="material-symbols-outlined ml-2 text-sm">arrow_forward</span>
         </Link>
         <p className="text-center text-[10px] text-outline-variant uppercase tracking-tighter leading-relaxed">
-          Complimentary shipping on orders above PKR 30,000. All prices are inclusive of
+          Complimentary shipping on orders above PKR 10,000. All prices are inclusive of
           luxury VAT where applicable.
         </p>
       </div>
@@ -358,7 +358,7 @@ function Cart() {
                   Discover our latest Eastern luxury collections
                 </p>
                 <Link
-                  href="/collection/lawn"
+                  href="/new-arrivals"
                   className="inline-block bg-primary text-white px-8 py-3 font-label-md tracking-widest uppercase hover:bg-primary-container transition-colors"
                 >
                   Shop New Arrivals

@@ -68,17 +68,19 @@ export async function GET() {
     }, {});
     const revenueByStatus = Object.values(revenueByStatusMap);
 
-    // ─── Products-derived metrics ───
+    // Only products with *tracked* inventory (non-null number) can be low/out-of-stock.
+    // Untracked products (inventory === null) are always purchasable — exclude them.
     const LOW_STOCK_THRESHOLD = 5;
     const lowStockAll = allProducts
-      .filter((p) => (p.inventory ?? 0) <= LOW_STOCK_THRESHOLD)
-      .sort((a, b) => (a.inventory ?? 0) - (b.inventory ?? 0));
+      .filter((p) => p.inventory !== null && p.inventory !== undefined && p.inventory <= LOW_STOCK_THRESHOLD)
+      .sort((a, b) => a.inventory - b.inventory);
     const lowStockProducts = lowStockAll
       .slice(0, 5)
       .map((p) => ({ _id: p._id, title: p.title, inventory: p.inventory, slug: p.slug }));
     const lowStockCount = lowStockAll.length;
 
-    const totalInventory = allProducts.reduce((sum, p) => sum + (p.inventory || 0), 0);
+    // Only count tracked inventory in total (untracked = null → skip)
+    const totalInventory = allProducts.reduce((sum, p) => sum + (typeof p.inventory === 'number' ? p.inventory : 0), 0);
     const pricedProducts = allProducts.filter((p) => typeof p.price === 'number');
     const avgPrice = pricedProducts.length
       ? pricedProducts.reduce((sum, p) => sum + p.price, 0) / pricedProducts.length
@@ -90,8 +92,10 @@ export async function GET() {
       return acc;
     }, {});
 
+    // inventoryValue: only meaningful for tracked products
     const topProductsByValue = [...allProducts]
-      .map((p) => ({ ...p, inventoryValue: (p.price || 0) * (p.inventory || 0) }))
+      .filter((p) => typeof p.inventory === 'number')
+      .map((p) => ({ ...p, inventoryValue: (p.price || 0) * p.inventory }))
       .sort((a, b) => b.inventoryValue - a.inventoryValue)
       .slice(0, 5);
 

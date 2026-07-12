@@ -58,6 +58,7 @@ const EmptyState = ({ message, height = 300 }) => (
 );
 
 const stockBadge = (inventory) => {
+  if (inventory === null || inventory === undefined) return { label: 'Untracked', className: 'bg-surface-container-high text-on-surface-variant' };
   if (inventory <= 0) return { label: 'Out of Stock', className: 'bg-error-container text-error' };
   if (inventory <= 5) return { label: 'Low Stock', className: 'bg-error-container/60 text-error' };
   return { label: 'In Stock', className: 'text-primary bg-primary-container/10' };

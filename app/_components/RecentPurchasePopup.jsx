@@ -91,7 +91,7 @@ export default function RecentPurchasePopup() {
 
     return (
         <div
-            className={`fixed bottom-2 left-2 md:left-2 z-[90] w-[300px] max-w-[calc(100vw-2rem)] transition-all duration-500 ${
+            className={`fixed bottom-1 left-1 md:left-2 z-[90] w-[300px] max-w-[calc(100vw-2rem)] transition-all duration-500 ${
                 visible ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-4 pointer-events-none'
             }`}
         >

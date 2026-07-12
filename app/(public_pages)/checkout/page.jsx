@@ -5,6 +5,14 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '../../store/cartContext';
 
+const DEFAULT_SHIPPING_CONFIG = {
+    cod: true,
+    bankDeposit: false,
+    bankDetails: { accountTitle: '', accountNumber: '', bankName: '', iban: '' },
+    standardCharge: 250,
+    freeShippingThreshold: 10000,
+};
+
 const countries = [
     'Country/Region',
     'Pakistan',
@@ -15,6 +23,7 @@ const countries = [
 
 export default function CheckoutPage() {
     const { cartItems, clearCart } = useCart();
+    const [shippingConfig, setShippingConfig] = useState(DEFAULT_SHIPPING_CONFIG);
     const [formData, setFormData] = useState({
         email: '',
         newsletter: false,
@@ -37,13 +46,30 @@ export default function CheckoutPage() {
     const headerRef = useRef(null);
     const lastScrollRef = useRef(0);
 
+    // ── Load shipping config from admin settings ─────────────────────────
+    useEffect(() => {
+        fetch('/api/settings/general')
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.settings?.shipping) {
+                    const cfg = { ...DEFAULT_SHIPPING_CONFIG, ...data.settings.shipping };
+                    setShippingConfig(cfg);
+                    // Default paymentMethod to the first enabled option
+                    setFormData(prev => ({
+                        ...prev,
+                        paymentMethod: cfg.cod ? 'cod' : cfg.bankDeposit ? 'bank' : 'cod',
+                    }));
+                }
+            })
+            .catch(err => console.error('Failed to load shipping config:', err));
+    }, []);
+
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
         setFormData((prev) => ({
             ...prev,
             [name]: type === 'checkbox' ? checked : value,
         }));
-        // Clear error on change
         if (errors[name]) {
             setErrors((prev) => ({ ...prev, [name]: '' }));
         }
@@ -54,7 +80,10 @@ export default function CheckoutPage() {
     };
 
     const subtotal = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
-    const shippingCost = formData.shippingMethod === 'express' ? 500 : 250;
+    // Free shipping when threshold is set and subtotal meets/exceeds it
+    const isFreeShipping = shippingConfig.freeShippingThreshold > 0 && subtotal >= shippingConfig.freeShippingThreshold;
+    const baseShippingCost = shippingConfig.standardCharge;
+    const shippingCost = isFreeShipping ? 0 : baseShippingCost;
     const total = subtotal + shippingCost;
 
     useEffect(() => {
@@ -256,7 +285,7 @@ export default function CheckoutPage() {
                                     <h2 className="text-headline-sm font-headline-sm text-primary">Contact Information</h2>
                                     <p className="text-label-sm font-label-sm text-on-surface-variant">
                                         Already have an account?{' '}
-                                        <Link href="#" className="text-secondary underline underline-offset-4">Log in</Link>
+                                        <Link href="/login" className="text-secondary underline underline-offset-4">Log in</Link>
                                     </p>
                                 </div>
                                 <div className="space-y-4">
@@ -390,60 +419,112 @@ export default function CheckoutPage() {
                                 </div>
                             </section>
 
-                            {/* Shipping Method */}
+                            {/* Shipping Method — standard only */}
                             <section className="pt-4 space-y-6">
                                 <h2 className="text-headline-sm font-headline-sm text-primary">Shipping Method</h2>
-                                <div className="border border-secondary/10 bg-surface-container-low divide-y divide-secondary/10">
-                                    <label className="flex items-center justify-between p-5 cursor-pointer hover:bg-surface-container-high transition-colors">
-                                        <div className="flex items-center gap-4">
-                                            <input
-                                                className="w-4 h-4 text-secondary focus:ring-secondary/20 border-secondary"
-                                                name="shippingMethod"
-                                                type="radio"
-                                                value="standard"
-                                                checked={formData.shippingMethod === 'standard'}
-                                                onChange={handleInputChange}
-                                            />
-                                            <span className="text-body-md text-primary">Standard Shipping (3-5 Business Days)</span>
-                                        </div>
-                                        <span className="text-label-md font-label-md text-primary">Rs. 250</span>
-                                    </label>
-                                    <label className="flex items-center justify-between p-5 cursor-pointer hover:bg-surface-container-high transition-colors">
-                                        <div className="flex items-center gap-4">
-                                            <input
-                                                className="w-4 h-4 text-secondary focus:ring-secondary/20 border-secondary"
-                                                name="shippingMethod"
-                                                type="radio"
-                                                value="express"
-                                                checked={formData.shippingMethod === 'express'}
-                                                onChange={handleInputChange}
-                                            />
-                                            <span className="text-body-md text-primary">Express Shipping (1-2 Business Days)</span>
-                                        </div>
-                                        <span className="text-label-md font-label-md text-primary">Rs. 500</span>
-                                    </label>
+                                <div className="border border-secondary/10 bg-surface-container-low">
+                                    <div className="flex items-center justify-between p-5">
+                                        <span className="text-body-md text-primary">Standard Shipping (3–5 Business Days)</span>
+                                        {isFreeShipping ? (
+                                            <span className="text-label-md font-label-md text-primary">
+                                                <span className="line-through text-on-surface-variant mr-1">{formatPrice(shippingConfig.standardCharge)}</span>
+                                                <span className="text-primary font-bold">FREE</span>
+                                            </span>
+                                        ) : (
+                                            <span className="text-label-md font-label-md text-primary">{formatPrice(shippingConfig.standardCharge)}</span>
+                                        )}
+                                    </div>
                                 </div>
+                                {isFreeShipping && (
+                                    <p className="text-body-sm text-primary flex items-center gap-1.5">
+                                        <span className="material-symbols-outlined text-base">local_shipping</span>
+                                        Free shipping applied — your order exceeds Rs. {shippingConfig.freeShippingThreshold.toLocaleString()}!
+                                    </p>
+                                )}
                             </section>
 
                             {/* Payment Information */}
                             <section className="pt-4 space-y-6">
                                 <div className="flex flex-col">
-                                    <h2 className="text-headline-sm font-headline-sm text-primary">Payment Information</h2>
+                                    <h2 className="text-headline-sm font-headline-sm text-primary">Payment Method</h2>
                                     <p className="text-label-sm font-label-sm text-on-surface-variant">All transactions are secure and encrypted.</p>
                                 </div>
-                                <div className="border border-secondary/10 bg-surface-container-low overflow-hidden">
-                                    <label className="flex items-center gap-4 p-5 cursor-pointer hover:bg-surface-container-high transition-colors">
-                                        <input
-                                            className="w-4 h-4 text-secondary focus:ring-secondary/20 border-secondary"
-                                            name="paymentMethod"
-                                            type="radio"
-                                            value="cod"
-                                            checked={formData.paymentMethod === 'cod'}
-                                            onChange={handleInputChange}
-                                        />
-                                        <span className="text-body-md font-label-md text-primary">Cash on Delivery (COD)</span>
-                                    </label>
+                                <div className="border border-secondary/10 bg-surface-container-low overflow-hidden divide-y divide-secondary/10">
+                                    {/* Cash on Delivery */}
+                                    {shippingConfig.cod && (
+                                        <label className="flex items-center gap-4 p-5 cursor-pointer hover:bg-surface-container-high transition-colors">
+                                            <input
+                                                className="w-4 h-4 text-secondary focus:ring-secondary/20 border-secondary"
+                                                name="paymentMethod"
+                                                type="radio"
+                                                value="cod"
+                                                checked={formData.paymentMethod === 'cod'}
+                                                onChange={handleInputChange}
+                                            />
+                                            <div>
+                                                <span className="text-body-md font-label-md text-primary block">Cash on Delivery (COD)</span>
+                                                <span className="text-body-sm text-on-surface-variant">Pay in cash when your order arrives</span>
+                                            </div>
+                                        </label>
+                                    )}
+
+                                    {/* Bank Deposit */}
+                                    {shippingConfig.bankDeposit && (
+                                        <label className="flex items-center gap-4 p-5 cursor-pointer hover:bg-surface-container-high transition-colors">
+                                            <input
+                                                className="w-4 h-4 text-secondary focus:ring-secondary/20 border-secondary"
+                                                name="paymentMethod"
+                                                type="radio"
+                                                value="bank"
+                                                checked={formData.paymentMethod === 'bank'}
+                                                onChange={handleInputChange}
+                                            />
+                                            <div>
+                                                <span className="text-body-md font-label-md text-primary block">Bank Deposit</span>
+                                                <span className="text-body-sm text-on-surface-variant">Transfer to our bank account before delivery</span>
+                                            </div>
+                                        </label>
+                                    )}
                                 </div>
+
+                                {/* Bank details info box — shown when bank deposit is selected */}
+                                {formData.paymentMethod === 'bank' && shippingConfig.bankDeposit && (
+                                    <div className="border border-secondary/20 bg-surface-container-low p-5 space-y-3">
+                                        <p className="text-label-md font-bold text-primary flex items-center gap-2">
+                                            <span className="material-symbols-outlined text-base">account_balance</span>
+                                            Bank Transfer Details
+                                        </p>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-body-md">
+                                            {shippingConfig.bankDetails.accountTitle && (
+                                                <div>
+                                                    <span className="text-on-surface-variant text-xs uppercase tracking-wide block mb-0.5">Account Title</span>
+                                                    <span className="font-medium text-on-surface">{shippingConfig.bankDetails.accountTitle}</span>
+                                                </div>
+                                            )}
+                                            {shippingConfig.bankDetails.bankName && (
+                                                <div>
+                                                    <span className="text-on-surface-variant text-xs uppercase tracking-wide block mb-0.5">Bank</span>
+                                                    <span className="font-medium text-on-surface">{shippingConfig.bankDetails.bankName}</span>
+                                                </div>
+                                            )}
+                                            {shippingConfig.bankDetails.accountNumber && (
+                                                <div>
+                                                    <span className="text-on-surface-variant text-xs uppercase tracking-wide block mb-0.5">Account Number</span>
+                                                    <span className="font-medium text-on-surface font-mono">{shippingConfig.bankDetails.accountNumber}</span>
+                                                </div>
+                                            )}
+                                            {shippingConfig.bankDetails.iban && (
+                                                <div>
+                                                    <span className="text-on-surface-variant text-xs uppercase tracking-wide block mb-0.5">IBAN</span>
+                                                    <span className="font-medium text-on-surface font-mono text-sm">{shippingConfig.bankDetails.iban}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <p className="text-body-sm text-on-surface-variant border-t border-secondary/10 pt-3">
+                                            ⚠️ Please transfer the exact order total and send a payment screenshot to confirm. Your order will be processed after payment is verified.
+                                        </p>
+                                    </div>
+                                )}
                             </section>
 
                             {/* Navigation */}
@@ -525,7 +606,14 @@ export default function CheckoutPage() {
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-body-md text-on-surface-variant">Shipping</span>
-                                    <span className="text-body-md font-medium text-primary">{formatPrice(shippingCost)}</span>
+                                    {isFreeShipping ? (
+                                        <span className="text-body-md font-medium text-primary">
+                                            <span className="line-through text-on-surface-variant/50 mr-1">{formatPrice(baseShippingCost)}</span>
+                                            FREE
+                                        </span>
+                                    ) : (
+                                        <span className="text-body-md font-medium text-primary">{formatPrice(shippingCost)}</span>
+                                    )}
                                 </div>
                                 <div className="flex justify-between border-t border-secondary/10 pt-4 mt-4">
                                     <span className="text-headline-sm font-headline-sm text-primary">Total</span>

@@ -3,6 +3,8 @@ import { EB_Garamond, Manrope, Jost } from 'next/font/google';
 import { CartProvider } from './store/cartContext';
 import { NavMenuProvider } from './store/navMenuContext';
 import { getHeaderMenuItems } from '@/lib/getHeaderMenu';
+import { getSiteSettings } from '..//lib/getSiteSettings';
+import { SiteSettingsProvider } from './store/siteSettingsContext';
 
 const ebGaramond = EB_Garamond({
     subsets: ['latin'],
@@ -37,6 +39,8 @@ export const metadata = {
 
 export default async function RootLayout({ children }) {
     const headerNavItems = await getHeaderMenuItems();
+    const settings = await getSiteSettings();
+
 
     return (
         <html
@@ -56,11 +60,13 @@ export default async function RootLayout({ children }) {
                 />
             </head>
             <body className="bg-surface text-on-surface selection:bg-secondary-container selection:text-on-secondary-container">
-                <CartProvider>
-                    <NavMenuProvider items={headerNavItems}>
-                        {children}
-                    </NavMenuProvider>
-                </CartProvider>
+                <SiteSettingsProvider  settings={settings}>
+                    <CartProvider>
+                        <NavMenuProvider items={headerNavItems}>
+                            {children}
+                        </NavMenuProvider>
+                    </CartProvider>
+                </SiteSettingsProvider>
             </body>
         </html>
     );

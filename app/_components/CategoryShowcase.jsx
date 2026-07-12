@@ -90,7 +90,7 @@ export default function CategoryShowcase({ initialProducts = null }) {
             <div className="px-4">
                 {/* Header */}
                 <div className="text-center mb-4">
-                    <h2 className="text-display-lg-mobile md:text-headline-lg font-bold font-headline-md text-primary mb-4">
+                    <h2 className="text-base md:text-headline-lg font-bold font-headline-md text-primary mb-4">
                         Our Collections
                     </h2>
                     <p className="text-label-md font-label-md text-secondary tracking-widest uppercase">

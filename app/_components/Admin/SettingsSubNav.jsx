@@ -3,19 +3,20 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { MdArrowBack } from 'react-icons/md';
+import { MdArrowBack, MdChevronRight, MdExpandMore } from 'react-icons/md';
+import { useState } from 'react';
 import { adminSettingsNavItems, SETTINGS_EXIT_HREF } from './adminNav';
 
-// Rendered inside the sidebar (desktop + mobile drawer) whenever the admin is on a
-// /admin/settings/* route. First item is always "Return to menu"; the rest come
-// from adminSettingsNavItems and can be extended freely.
-//   variant: 'desktop' | 'mobile'  — matches the surrounding nav's styling.
-//   onNavigate: called before navigating (e.g. close the mobile drawer).
 export default function SettingsSubNav({ variant = 'desktop', onNavigate } = {}) {
   const pathname = usePathname();
   const router = useRouter();
+  const [openItems, setOpenItems] = useState({});
 
   const isActive = (href) => pathname === href || pathname.startsWith(href + '/');
+
+  const toggleOpen = (label) => {
+    setOpenItems((prev) => ({ ...prev, [label]: !prev[label] }));
+  };
 
   const handleReturn = () => {
     if (onNavigate) onNavigate();
@@ -37,40 +38,60 @@ export default function SettingsSubNav({ variant = 'desktop', onNavigate } = {})
           section: 'px-4 pt-2 pb-1',
         };
 
+  const renderItem = (item) => {
+    const active = isActive(item.href);
+    const Icon = item.icon;
+    const hasChildren = item.children && item.children.length > 0;
+    const isOpen = openItems[item.label];
+
+    return (
+      <li key={item.href}>
+        {hasChildren ? (
+          <div>
+            <button
+              onClick={() => toggleOpen(item.label)}
+              className={`${active ? s.active : s.inactive} w-full flex items-center justify-between`}
+            >
+              <div className="flex items-center gap-md">
+                <Icon size={20} />
+                <span className="font-body-md text-body-md">{item.label}</span>
+              </div>
+              {isOpen ? <MdExpandMore size={20} /> : <MdChevronRight size={20} />}
+            </button>
+            {isOpen && (
+              <ul className="pl-6 space-y-1 mt-1">
+                {item.children.map((child) => renderItem(child))}
+              </ul>
+            )}
+          </div>
+        ) : (
+          <Link
+            href={item.href}
+            onClick={onNavigate}
+            className={active ? s.active : s.inactive}
+          >
+            <Icon size={20} />
+            <span className="font-body-md text-body-md">{item.label}</span>
+          </Link>
+        )}
+      </li>
+    );
+  };
+
   return (
     <ul className="space-y-base">
-      {/* 1st item — exit the Settings section back to the main menu */}
       <li>
         <button type="button" onClick={handleReturn} className={s.returnItem}>
           <MdArrowBack size={20} />
           <span className="font-body-md text-body-md">Return to menu</span>
         </button>
       </li>
-
-      {/* Section label */}
       <li className={s.section}>
         <span className="text-xs uppercase tracking-wider text-on-surface-variant/70 font-semibold">
           Settings
         </span>
       </li>
-
-      {/* Settings sub-routes (General, Menus, …) */}
-      {adminSettingsNavItems.map((item) => {
-        const active = isActive(item.href);
-        const Icon = item.icon;
-        return (
-          <li key={item.href}>
-            <Link
-              href={item.href}
-              onClick={onNavigate}
-              className={active ? s.active : s.inactive}
-            >
-              <Icon size={20} />
-              <span className="font-body-md text-body-md">{item.label}</span>
-            </Link>
-          </li>
-        );
-      })}
+      {adminSettingsNavItems.map((item) => renderItem(item))}
     </ul>
   );
 }
