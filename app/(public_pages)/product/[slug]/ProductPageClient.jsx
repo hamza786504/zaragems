@@ -318,7 +318,7 @@ export default function ProductPageClient({ initialProduct }) {
 
                         {/* Accordion Specs */}
                         <div className="flex flex-col border-t border-outline-variant mt-8">
-                            {['Product Details', 'Care Instructions', 'Shipping & Returns'].map((label, idx) => {
+                            {['Product Details', 'Care Instructions', 'Shipping'].map((label, idx) => {
                                 // Hide the Product Details accordion when there's no real description.
                                 if (idx === 0 && (!product.description || product.description.trim().length <= 1)) return null;
                                 const content = [

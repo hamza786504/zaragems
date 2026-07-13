@@ -42,7 +42,8 @@ export default async function Home() {
             {/* Zero-render client island — attaches scroll + IntersectionObserver */}
             <ScrollAnimations />
 
-            <HeroCarousel />
+            {/* <HeroCarousel /> */}
+            <img src="/banner.png" alt="banner" style={{width: "100vw"}} />
             <NewArrivals />
             {/* collections + initialProducts pre-seed the default tab — no client fetch waterfall */}
             <CategoryShowcase collections={collections} initialProducts={initialShowcaseProducts} />
