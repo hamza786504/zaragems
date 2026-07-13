@@ -63,6 +63,9 @@ const DEFAULT_SETTINGS = {
     bankDetails: { accountTitle: '', accountNumber: '', bankName: '', iban: '' },
     standardCharge: 250,
     freeShippingThreshold: 10000,
+    shippingMethods: [
+      { id: 'standard', name: 'Standard Shipping', description: '3–5 Business Days', charge: 250, isDefault: true },
+    ],
   },
 };
 

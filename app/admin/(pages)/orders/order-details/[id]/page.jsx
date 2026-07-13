@@ -51,6 +51,8 @@ const OrderDetailPage = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [updating, setUpdating] = useState(false);
+  const [approving, setApproving] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -112,13 +114,55 @@ const OrderDetailPage = () => {
   const lineItems = order.lineItems || [];
   const customer = order.customer || {};
   const isPaid = order.paymentStatus === 'Paid' || order.paymentStatus === 'Partially Paid';
-  const isFulfilled = order.fulfillmentStatus === 'Fulfilled';
+  const isFulfilled = (order.fulfillmentStatus) === 'Fulfilled';
   const customerInitials = (customer.name || order.email || '?')
     .split(' ')
     .map((n) => n[0])
     .join('')
     .slice(0, 2)
     .toUpperCase();
+
+  const handleMarkFulfilled = async () => {
+    setUpdating(true);
+    try {
+      const res = await fetch(`/api/orders/${order._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fulfillmentStatus: 'Fulfilled' }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || data.error || 'Failed to update order');
+      }
+      setOrder({ ...order, fulfillmentStatus: 'Fulfilled' });
+    } catch (err) {
+      console.error('Mark as Fulfilled error:', err);
+      alert(err.message);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleApprovePayment = async () => {
+    setApproving(true);
+    try {
+      const res = await fetch(`/api/orders/${order._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentStatus: 'Paid', fulfillmentStatus: 'Fulfilled' }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || data.error || 'Failed to approve order');
+      }
+      setOrder({ ...order, paymentStatus: 'Paid', fulfillmentStatus: 'Fulfilled' });
+    } catch (err) {
+      console.error('Approve payment error:', err);
+      alert(err.message);
+    } finally {
+      setApproving(false);
+    }
+  };
 
   const shippingLines = [
     customer.name,
@@ -271,7 +315,7 @@ const OrderDetailPage = () => {
 
                     {/* Step 3 — fulfillment */}
                     <div className="relative flex items-start pl-8">
-                      {isFulfilled ? (
+                      {order.fulfillmentStatus === 'Fulfilled' ? (
                         <div className="absolute left-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center z-10">
                           <MdCheck size={14} className="text-on-primary" />
                         </div>
@@ -283,14 +327,14 @@ const OrderDetailPage = () => {
                       <div className="flex-1">
                         <div className="flex justify-between items-start">
                           <p className="font-bold text-primary">
-                            {isFulfilled ? 'Fulfilled' : 'Pending fulfillment'}
+                            {order.fulfillmentStatus === 'Fulfilled' ? 'Fulfilled' : 'Pending fulfillment'}
                           </p>
                           <p className="text-body-sm text-on-surface-variant">
-                            {isFulfilled ? 'Complete' : 'Current'}
+                            {order.fulfillmentStatus === 'Fulfilled' ? 'Complete' : 'Current'}
                           </p>
                         </div>
                         <p className="text-body-sm text-on-surface-variant">
-                          {isFulfilled
+                          {order.fulfillmentStatus === 'Fulfilled'
                             ? 'The order has been packed and shipped.'
                             : 'The order is ready to be picked and packed.'}
                         </p>
@@ -326,8 +370,16 @@ const OrderDetailPage = () => {
                   {order.fulfillmentStatus || 'Unfulfilled'}.
                 </p>
                 <div className="space-y-3">
-                  <button className="w-full py-3 bg-primary text-on-primary font-bold text-body-md hover:opacity-90 transition-opacity rounded shadow-sm active:scale-[0.98]">
-                    Mark as Fulfilled
+                  <button
+                    onClick={handleMarkFulfilled}
+                    disabled={isFulfilled || updating}
+                    className={`w-full py-3 font-bold text-body-md transition-opacity rounded shadow-sm active:scale-[0.98] ${
+                      isFulfilled
+                        ? 'bg-surface-container-high text-on-surface-variant cursor-not-allowed'
+                        : 'bg-primary text-on-primary hover:opacity-90'
+                    }`}
+                  >
+                    {updating ? 'Updating…' : isFulfilled ? 'Fulfilled' : 'Mark as Fulfilled'}
                   </button>
                   <button className="w-full py-3 border border-error text-error font-bold text-body-md hover:bg-error-container/10 transition-colors rounded active:scale-[0.98]">
                     Refund
@@ -388,6 +440,32 @@ const OrderDetailPage = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Payment Receipt — shown when customer uploaded one */}
+              {order.receiptUrl && (
+                <div className="bg-surface-container-lowest border border-outline-variant shadow-sm rounded p-lg">
+                  <h3 className="font-headline-md text-headline-md mb-4">Payment Receipt</h3>
+                  <a href={order.receiptUrl} target="_blank" rel="noopener noreferrer">
+                    <Image
+                      src={order.receiptUrl}
+                      alt="Payment receipt"
+                      width={0}
+                      height={0}
+                      sizes="100vw"
+                      className="w-full h-auto rounded border border-outline-variant object-contain max-h-64"
+                    />
+                  </a>
+                  {order.paymentStatus !== 'Paid' && (
+                    <button
+                      onClick={handleApprovePayment}
+                      disabled={approving}
+                      className="w-full mt-4 py-3 bg-primary text-on-primary font-bold text-body-md hover:opacity-90 transition-opacity rounded shadow-sm active:scale-[0.98] flex items-center justify-center gap-2"
+                    >
+                      {approving ? 'Approving…' : 'Approve Payment'}
+                    </button>
+                  )}
+                </div>
+              )}
 
               {/* Payment Summary */}
               <div className="bg-surface-container-lowest border border-outline-variant shadow-sm rounded p-lg">

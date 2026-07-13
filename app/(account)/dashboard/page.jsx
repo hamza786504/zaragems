@@ -29,11 +29,14 @@ export default function MyAccountPage() {
                                 month: 'long',
                                 day: 'numeric',
                             }),
-                            status: order.status || order.fulfillmentStatus || 'Processing',
+                            status: order.fulfillmentStatus || order.status || 'Processing',
                             total: `Rs. ${Number(order.total).toLocaleString()}`,
-                            statusColor: order.status === 'Delivered'
-                                ? 'bg-surface-container-highest text-on-surface'
-                                : 'bg-primary-fixed text-on-primary-fixed-variant',
+                            statusColor: (() => {
+                                const s = order.fulfillmentStatus || order.status;
+                                return s === 'Fulfilled' || s === 'Delivered'
+                                    ? 'bg-surface-container-highest text-on-surface'
+                                    : 'bg-primary-fixed text-on-primary-fixed-variant';
+                            })(),
                         })));
                     } else if (!data.success) {
                         setOrdersError(data.error || 'Failed to load orders');

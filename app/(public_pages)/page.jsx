@@ -17,8 +17,9 @@ import Newsletter from '../_components/Newsletter';
 import Testimonials from '../_components/Testimonials';
 import ScrollAnimations from '../_components/ScrollAnimations';
 import { getShowcaseProducts } from '@/lib/getShowcaseProducts';
+import { publicClient } from '@/lib/sanityClientPublic';
 
-export const revalidate = 300;  // ISR: re-render at most every 5 min on the server
+export const revalidate = 300;
 
 export const metadata = {
     title: 'Zaragems | Luxury Jewellery & Accessories',
@@ -26,10 +27,15 @@ export const metadata = {
 };
 
 export default async function Home() {
-    // Fetch only the default tab's products server-side.
-    // Cached by unstable_cache (tag: 'products') → instant on every CDN edge hit.
-    // Non-default tabs (Handchain, Earrings, Accessories) remain lazy-loaded.
-    const initialShowcaseProducts = await getShowcaseProducts('Rings');
+    const SHOWCASE_SLUGS = ['rings-collection', 'handcuff-bracelets', 'pendants-malaset'];
+    const collections = await publicClient.fetch(
+        `*[_type == "collection" && slug in $slugs] | order(name asc){slug, name, _id}`,
+        { slugs: SHOWCASE_SLUGS }
+    );
+    const firstCollection = collections[0];
+    const initialShowcaseProducts = firstCollection
+        ? await getShowcaseProducts(firstCollection.slug)
+        : [];
 
     return (
         <main>
@@ -38,11 +44,12 @@ export default async function Home() {
 
             <HeroCarousel />
             <NewArrivals />
-            {/* initialProducts pre-seeds the default tab — no skeleton on first paint */}
-            <CategoryShowcase initialProducts={initialShowcaseProducts} />
+            {/* collections + initialProducts pre-seed the default tab — no client fetch waterfall */}
+            <CategoryShowcase collections={collections} initialProducts={initialShowcaseProducts} />
             <HandcraftedCategories />
-            <FeaturedProducts />
-            <HandcraftedAccessories />
+            <FeaturedProducts collectionSlug="handcuff-baracelts" title="HandCuff/Baracelts" />
+            <FeaturedProducts collectionSlug="studs-earings" title="Studs/Earings" />
+            {/* <HandcraftedAccessories /> */}
             <Testimonials />
             <BrandStory />
             <Newsletter />

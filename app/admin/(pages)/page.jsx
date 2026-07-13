@@ -99,7 +99,7 @@ export default async function DashboardPage() {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto space-y-lg">
+    <div className="px-3 max-w-7xl mx-auto space-y-lg">
       {/* Header with Quick Actions */}
       <div className="flex justify-between items-center">
         <div>

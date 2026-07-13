@@ -34,7 +34,7 @@ const getStatusBadge = (status) => {
 
 export default function RecentOrdersClient({ recentOrders }) {
   return (
-    <div className="bg-white rounded-xl border border-outline-variant shadow-sm overflow-hidden flex flex-col">
+    <div className="w-full md:col-span-2 bg-white rounded-xl border border-outline-variant shadow-sm overflow-hidden flex flex-col">
       <div className="p-3 md:p-lg border-b border-outline-variant flex justify-between items-center">
         <div>
           <h6 className="font-headline-md text-headline-md text-on-surface">Recent Orders</h6>
@@ -50,7 +50,7 @@ export default function RecentOrdersClient({ recentOrders }) {
             <tbody className="divide-y divide-outline-variant">
               {recentOrders.map((order, index) => (
                 <tr key={order._id || index} className="hover:bg-surface-container-low transition-colors cursor-pointer group">
-                  <td className="p-md">
+                  <td className="p-2">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center">
                         <span className="text-xs font-bold text-on-surface-variant">
@@ -58,22 +58,12 @@ export default function RecentOrdersClient({ recentOrders }) {
                         </span>
                       </div>
                       <div>
-                        <p className="font-label-md text-on-surface group-hover:text-primary transition-colors">{order.orderId}</p>
+                        <Link href={`/admin/orders/order-details/${order._id}`} className="w-[150px] font-label-sm text-sm text-on-surface group-hover:text-primary transition-colors">{order.orderId}</Link>
                         <p className="text-body-sm text-on-surface-variant">{order.customer?.name}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="p-md text-right">
-                    <p className="font-label-md text-on-surface">{PKR(order.total)}</p>
-                    <div className="flex items-center justify-end gap-2 mt-1">
-                      {getStatusBadge(order.paymentStatus)}
-                    </div>
-                  </td>
-                  <td className="p-md text-right">
-                    <p className="text-body-sm text-on-surface-variant">
-                      {new Date(order.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </p>
-                  </td>
+                 
                 </tr>
               ))}
             </tbody>

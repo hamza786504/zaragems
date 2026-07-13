@@ -280,7 +280,7 @@ const OrdersPage = () => {
             {/* Search Bar */}
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
               </span>
               <input
                 className="w-full pl-10 pr-4 py-2.5 border border-outline-variant rounded-lg bg-transparent text-body-md focus:outline-none focus:border-primary transition-colors"
@@ -373,7 +373,7 @@ const OrdersPage = () => {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-surface-container-low border-b border-outline-variant">
-                    <th className="px-lg py-4 text-left">
+                    <th className="px-2 py-2 text-left">
                       <input
                         className="rounded border-outline-variant text-primary focus:ring-primary w-5 h-5 cursor-pointer"
                         type="checkbox"
@@ -381,23 +381,23 @@ const OrdersPage = () => {
                         onChange={handleSelectAll}
                       />
                     </th>
-                    <th className="px-lg py-4 text-left font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Order</th>
-                    <th className="px-lg py-4 text-left font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Customer</th>
-                    <th className="px-lg py-4 text-left font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Date</th>
-                    <th className="px-lg py-4 text-left font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Fulfillment</th>
-                    <th className="px-lg py-4 text-left font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Payment</th>
-                    <th className="px-lg py-4 text-right font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Total</th>
-                    <th className="px-lg py-4 text-right font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Items</th>
-                    <th className="px-lg py-4 text-center font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Actions</th>
+                    <th className="px-2 py-2 text-left font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Order</th>
+                    <th className="px-2 py-2 text-left font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Customer</th>
+                    <th className="px-2 py-2 text-left font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Date</th>
+                    <th className="px-2 py-2 text-left font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Fulfillment</th>
+                    <th className="px-2 py-2 text-left font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Payment</th>
+                    <th className="px-2 py-2 text-right font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Total</th>
+                    <th className="px-2 py-2 text-right font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Items</th>
+                    <th className="px-2 py-2 text-center font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant">
                   {loading ? (
                     Array.from({ length: 5 }).map((_, i) => (
                       <tr key={i} className="animate-pulse">
-                        <td className="px-lg py-4"><div className="w-5 h-5 bg-surface-container rounded" /></td>
-                        <td className="px-lg py-4"><div className="h-4 bg-surface-container rounded w-24" /></td>
-                        <td className="px-lg py-4">
+                        <td className="px-2 py-2"><div className="w-5 h-5 bg-surface-container rounded" /></td>
+                        <td className="px-2 py-2"><div className="h-4 bg-surface-container rounded w-24" /></td>
+                        <td className="px-2 py-2">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 bg-surface-container rounded-full" />
                             <div className="space-y-1">
@@ -406,12 +406,12 @@ const OrdersPage = () => {
                             </div>
                           </div>
                         </td>
-                        <td className="px-lg py-4"><div className="h-4 bg-surface-container rounded w-20" /></td>
-                        <td className="px-lg py-4"><div className="h-6 bg-surface-container rounded-full w-24" /></td>
-                        <td className="px-lg py-4"><div className="h-6 bg-surface-container rounded-full w-16" /></td>
-                        <td className="px-lg py-4 text-right"><div className="h-4 bg-surface-container rounded w-16 ml-auto" /></td>
-                        <td className="px-lg py-4 text-right"><div className="h-4 bg-surface-container rounded w-6 ml-auto" /></td>
-                        <td className="px-lg py-4 text-center"><div className="h-4 bg-surface-container rounded w-16 mx-auto" /></td>
+                        <td className="px-2 py-2"><div className="h-4 bg-surface-container rounded w-20" /></td>
+                        <td className="px-2 py-2"><div className="h-6 bg-surface-container rounded-full w-24" /></td>
+                        <td className="px-2 py-2"><div className="h-6 bg-surface-container rounded-full w-16" /></td>
+                        <td className="px-2 py-2 text-right"><div className="h-4 bg-surface-container rounded w-16 ml-auto" /></td>
+                        <td className="px-2 py-2 text-right"><div className="h-4 bg-surface-container rounded w-6 ml-auto" /></td>
+                        <td className="px-2 py-2 text-center"><div className="h-4 bg-surface-container rounded w-16 mx-auto" /></td>
                       </tr>
                     ))
                   ) : (
@@ -420,7 +420,7 @@ const OrdersPage = () => {
                         key={order._id}
                         className={`hover:bg-surface-container-low transition-colors cursor-pointer group ${selectedOrders.includes(order._id) ? 'bg-primary-container/5' : ''}`}
                       >
-                        <td className="px-lg py-4">
+                        <td className="px-2 py-2">
                           <input
                             className="rounded border-outline-variant text-primary focus:ring-primary w-5 h-5 cursor-pointer"
                             type="checkbox"
@@ -428,8 +428,8 @@ const OrdersPage = () => {
                             onChange={() => handleSelectOrder(order._id)}
                           />
                         </td>
-                        <td className="px-lg py-4">
-                          <Link className="text-primary font-label-md text-label-md font-bold hover:underline" href={`/admin/orders/order-details/${order._id}`}>
+                        <td className="px-2 py-2">
+                          <Link className="text-primary text-[10px] font-label-md text-label-md font-bold hover:underline" href={`/admin/orders/order-details/${order._id}`}>
                             {order.orderId}
                           </Link>
                           <div className="flex gap-1 mt-1">
@@ -440,7 +440,7 @@ const OrdersPage = () => {
                             ))}
                           </div>
                         </td>
-                        <td className="px-lg py-4">
+                        <td className="p-2">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center font-bold text-secondary text-[12px]">
                               {order.customer?.avatar || (order.customer?.name || '?').split(' ').map(n => n[0]).join('').slice(0, 2)}
@@ -453,32 +453,32 @@ const OrdersPage = () => {
                             </div>
                           </div>
                         </td>
-                        <td className="px-lg py-4">
+                        <td className="p-2">
                           <p className="font-body-md text-body-md text-on-surface">{formatDate(order.date || order.createdAt)}</p>
                           <p className="text-label-md text-on-surface-variant">{formatTime(order.date || order.createdAt)}</p>
                           <p className="text-label-md text-on-surface-variant">{order.channel || 'Online Store'}</p>
                         </td>
-                        <td className="px-lg py-4">
+                        <td className="p-2">
                           <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-label-md font-label-md ${getStatusBadge(order.fulfillmentStatus)}`}>
                             {getFulfillmentIcon(order.fulfillmentStatus)}
                             {order.fulfillmentStatus}
                           </span>
                         </td>
-                        <td className="px-lg py-4">
+                        <td className="p-2">
                           <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-label-md font-label-md ${getStatusBadge(order.paymentStatus)}`}>
                             {getPaymentStatusIcon(order.paymentStatus)}
                             {order.paymentStatus}
                           </span>
                         </td>
-                        <td className="px-lg py-4 text-right">
+                        <td className="p-2 text-right">
                           <p className="font-body-md text-body-md text-on-surface font-bold">
                             Rs. {Number(order.total || 0).toLocaleString()}
                           </p>
                         </td>
-                        <td className="px-lg py-4 text-right">
+                        <td className="p-2 text-right">
                           <p className="font-body-md text-body-md text-on-surface">{order.items}</p>
                         </td>
-                        <td className="px-lg py-4 text-center">
+                        <td className="p-2 text-center">
                           <div className="flex items-center justify-center gap-2">
                             {order.status === 'archived' ? (
                               <button

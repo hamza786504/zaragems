@@ -179,9 +179,9 @@ export default function Orders() {
                                     </td>
                                     <td className="p-4">
                                         <span
-                                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-label-sm ${getStatusColor(order.status)}`}
+                                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-label-sm ${getStatusColor(order.fulfillmentStatus || order.status)}`}
                                         >
-                                            {order.status}
+                                            {order.fulfillmentStatus || order.status}
                                         </span>
                                     </td>
                                     <td className="p-4 text-primary font-display-lg text-body-lg">

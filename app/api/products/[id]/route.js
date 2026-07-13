@@ -34,7 +34,9 @@ export async function PUT(request, { params }) {
       body.collectionId = null;
     }
 
-    if (!body.slug && body.title) {
+    if (body.slug) {
+      body.slug = slugify(body.slug);
+    } else if (body.title) {
       body.slug = slugify(body.title);
     }
 

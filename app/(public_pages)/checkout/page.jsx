@@ -12,6 +12,9 @@ const DEFAULT_SHIPPING_CONFIG = {
     bankDetails: { accountTitle: '', accountNumber: '', bankName: '', iban: '' },
     standardCharge: 250,
     freeShippingThreshold: 10000,
+    shippingMethods: [
+        { id: 'standard', name: 'Standard Shipping', description: '3–5 Business Days', charge: 250, isDefault: true },
+    ],
 };
 
 const countries = [
@@ -47,6 +50,9 @@ export default function CheckoutPage() {
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [orderSuccess, setOrderSuccess] = useState(null); // holds placed order details
+    const [receiptFile, setReceiptFile] = useState(null);
+    const [receiptUrl, setReceiptUrl] = useState('');
+    const [receiptUploading, setReceiptUploading] = useState(false);
 
     // ── Saved addresses for logged-in customers ───────────────────────────────
     const [savedAddresses, setSavedAddresses] = useState([]);
@@ -132,10 +138,14 @@ export default function CheckoutPage() {
             .then(data => {
                 if (data.success && data.settings?.shipping) {
                     const cfg = { ...DEFAULT_SHIPPING_CONFIG, ...data.settings.shipping };
+                    if (!cfg.shippingMethods || cfg.shippingMethods.length === 0) {
+                        cfg.shippingMethods = DEFAULT_SHIPPING_CONFIG.shippingMethods;
+                    }
                     setShippingConfig(cfg);
-                    // Default paymentMethod to the first enabled option
+                    const defaultMethod = cfg.shippingMethods.find(m => m.isDefault) || cfg.shippingMethods[0];
                     setFormData(prev => ({
                         ...prev,
+                        shippingMethod: defaultMethod?.id || 'standard',
                         paymentMethod: cfg.cod ? 'cod' : cfg.bankDeposit ? 'bank' : 'cod',
                     }));
                 }
@@ -159,11 +169,34 @@ export default function CheckoutPage() {
     };
 
     const subtotal = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
+    const methods = shippingConfig.shippingMethods || DEFAULT_SHIPPING_CONFIG.shippingMethods;
+    const selectedMethod = methods.find(m => m.id === formData.shippingMethod) || methods[0];
     // Free shipping when threshold is set and subtotal meets/exceeds it
     const isFreeShipping = shippingConfig.freeShippingThreshold > 0 && subtotal >= shippingConfig.freeShippingThreshold;
-    const baseShippingCost = shippingConfig.standardCharge;
+    const baseShippingCost = selectedMethod?.charge || shippingConfig.standardCharge;
     const shippingCost = isFreeShipping ? 0 : baseShippingCost;
     const total = subtotal + shippingCost;
+
+    const handleReceiptUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setReceiptFile(file);
+        setReceiptUploading(true);
+        setErrors((prev) => ({ ...prev, receipt: '' }));
+        try {
+            const fd = new FormData();
+            fd.append('file', file);
+            const res = await fetch('/api/upload', { method: 'POST', body: fd });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.message || 'Upload failed');
+            setReceiptUrl(data.url);
+        } catch (err) {
+            setErrors((prev) => ({ ...prev, receipt: err.message }));
+            setReceiptFile(null);
+        } finally {
+            setReceiptUploading(false);
+        }
+    };
 
     useEffect(() => {
         const handleScroll = () => {
@@ -207,6 +240,9 @@ export default function CheckoutPage() {
             else if (formData.password !== formData.confirmPassword)
                 newErrors.confirmPassword = 'Passwords do not match.';
         }
+        if (formData.paymentMethod === 'bank' && !receiptUrl) {
+            newErrors.receipt = 'Please upload a payment receipt screenshot.';
+        }
         return newErrors;
     };
 
@@ -238,6 +274,8 @@ export default function CheckoutPage() {
                 country: formData.country,
                 postalCode: formData.postalCode,
                 shippingMethod: formData.shippingMethod,
+                shippingMethodName: selectedMethod?.name || 'Standard Shipping',
+                shipping: shippingCost,
                 paymentMethod: formData.paymentMethod,
                 total,
                 items: cartItems.reduce((acc, item) => acc + item.quantity, 0),
@@ -253,6 +291,7 @@ export default function CheckoutPage() {
                 })),
                 // Include password only for new (guest) account creation
                 ...(!isLoggedIn && accountType === 'new' && { password: formData.password }),
+                ...(receiptUrl && { receiptUrl }),
             };
 
             const res = await fetch('/api/orders', {
@@ -276,7 +315,7 @@ export default function CheckoutPage() {
                 address: [formData.address, formData.apartment, formData.city, formData.country]
                     .filter(Boolean)
                     .join(', '),
-                shippingMethod: formData.shippingMethod,
+                shippingMethod: selectedMethod?.name || 'Standard Shipping',
             });
         } catch (err) {
             setErrors({ submit: err.message });
@@ -646,21 +685,41 @@ export default function CheckoutPage() {
                                 </div>
                             </section>
 
-                            {/* Shipping Method — standard only */}
+                            {/* Shipping Method — selectable options */}
                             <section className="pt-4 space-y-6">
                                 <h2 className="text-headline-sm font-headline-sm text-primary">Shipping Method</h2>
-                                <div className="border border-secondary/10 bg-surface-container-low">
-                                    <div className="flex items-center justify-between p-5">
-                                        <span className="text-body-md text-primary">Standard Shipping (3–5 Business Days)</span>
-                                        {isFreeShipping ? (
+                                <div className="border border-secondary/10 bg-surface-container-low overflow-hidden divide-y divide-secondary/10">
+                                    {methods.map((method) => (
+                                        <label
+                                            key={method.id}
+                                            className={`flex items-center gap-4 p-5 cursor-pointer hover:bg-surface-container-high transition-colors ${formData.shippingMethod === method.id ? 'bg-secondary/5' : ''}`}
+                                        >
+                                            <input
+                                                className="w-4 h-4 text-secondary focus:ring-secondary/20 border-secondary"
+                                                name="shippingMethod"
+                                                type="radio"
+                                                value={method.id}
+                                                checked={formData.shippingMethod === method.id}
+                                                onChange={handleInputChange}
+                                            />
+                                            <div className="flex-1">
+                                                <span className="text-body-md font-label-md text-primary block">{method.name}</span>
+                                                {method.description && (
+                                                    <span className="text-body-sm text-on-surface-variant">{method.description}</span>
+                                                )}
+                                            </div>
                                             <span className="text-label-md font-label-md text-primary">
-                                                <span className="line-through text-on-surface-variant mr-1">{formatPrice(shippingConfig.standardCharge)}</span>
-                                                <span className="text-primary font-bold">FREE</span>
+                                                {isFreeShipping ? (
+                                                    <>
+                                                        <span className="line-through text-on-surface-variant mr-1">{formatPrice(method.charge)}</span>
+                                                        <span className="text-primary font-bold">FREE</span>
+                                                    </>
+                                                ) : (
+                                                    formatPrice(method.charge)
+                                                )}
                                             </span>
-                                        ) : (
-                                            <span className="text-label-md font-label-md text-primary">{formatPrice(shippingConfig.standardCharge)}</span>
-                                        )}
-                                    </div>
+                                        </label>
+                                    ))}
                                 </div>
                                 {isFreeShipping && (
                                     <p className="text-body-sm text-primary flex items-center gap-1.5">
@@ -750,6 +809,31 @@ export default function CheckoutPage() {
                                         <p className="text-body-sm text-on-surface-variant border-t border-secondary/10 pt-3">
                                             ⚠️ Please transfer the exact order total and send a payment screenshot to confirm. Your order will be processed after payment is verified.
                                         </p>
+                                        <div className="border-t border-secondary/10 pt-4">
+                                            <p className="text-label-md font-bold text-primary mb-3">Upload Payment Receipt</p>
+                                            <label className="flex items-center justify-center w-full h-32 border-2 border-dashed border-secondary/30 rounded cursor-pointer hover:border-secondary transition-colors bg-surface-container-lowest">
+                                                {receiptUrl ? (
+                                                    <div className="flex flex-col items-center gap-2">
+                                                        <span className="material-symbols-outlined text-3xl text-secondary">check_circle</span>
+                                                        <span className="text-label-sm text-secondary">Receipt uploaded</span>
+                                                        <span className="text-label-sm text-on-surface-variant">Tap to replace</span>
+                                                    </div>
+                                                ) : receiptUploading ? (
+                                                    <div className="flex flex-col items-center gap-2">
+                                                        <span className="material-symbols-outlined animate-spin text-3xl text-secondary">progress_activity</span>
+                                                        <span className="text-label-sm text-on-surface-variant">Uploading…</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex flex-col items-center gap-2">
+                                                        <span className="material-symbols-outlined text-3xl text-on-surface-variant">cloud_upload</span>
+                                                        <span className="text-label-sm text-on-surface-variant">Click to upload receipt screenshot</span>
+                                                        <span className="text-label-sm text-on-surface-variant/60">PNG, JPG up to 5MB</span>
+                                                    </div>
+                                                )}
+                                                <input type="file" accept="image/png,image/jpeg,image/jpg" className="hidden" onChange={handleReceiptUpload} disabled={receiptUploading} />
+                                            </label>
+                                            {errors.receipt && <p className="text-error text-[11px] mt-2">{errors.receipt}</p>}
+                                        </div>
                                     </div>
                                 )}
                             </section>

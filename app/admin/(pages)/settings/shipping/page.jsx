@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Truck, CreditCard, Building2, Check, Loader2, Info } from 'lucide-react';
+import { Truck, CreditCard, Building2, Check, Loader2, Info, Plus, X } from 'lucide-react';
 import Button from '../../../../_components/Admin/Button';
 
 const DEFAULT_SHIPPING = {
@@ -10,6 +10,9 @@ const DEFAULT_SHIPPING = {
   bankDetails: { accountTitle: '', accountNumber: '', bankName: '', iban: '' },
   standardCharge: 250,
   freeShippingThreshold: 10000,
+  shippingMethods: [
+    { id: 'standard', name: 'Standard Shipping', description: '3–5 Business Days', charge: 250, isDefault: true },
+  ],
 };
 
 const SettingsCard = ({ icon: Icon, title, subtitle, children }) => (
@@ -30,13 +33,39 @@ export default function ShippingSettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState('idle'); // idle | saving | saved
 
+  const addMethod = () => {
+    const id = `method_${Date.now()}`;
+    setShipping(prev => ({
+      ...prev,
+      shippingMethods: [...prev.shippingMethods, { id, name: '', description: '', charge: 0, isDefault: false }],
+    }));
+  };
+
+  const removeMethod = (id) => {
+    setShipping(prev => ({
+      ...prev,
+      shippingMethods: prev.shippingMethods.filter(m => m.id !== id),
+    }));
+  };
+
+  const updateMethod = (id, field, value) => {
+    setShipping(prev => ({
+      ...prev,
+      shippingMethods: prev.shippingMethods.map(m => m.id === id ? { ...m, [field]: value } : m),
+    }));
+  };
+
   useEffect(() => {
     const load = async () => {
       try {
         const res = await fetch('/api/settings/general', { credentials: 'include' });
         const data = await res.json();
         if (data.success && data.settings?.shipping) {
-          setShipping({ ...DEFAULT_SHIPPING, ...data.settings.shipping });
+          const loaded = { ...DEFAULT_SHIPPING, ...data.settings.shipping };
+          if (!loaded.shippingMethods || loaded.shippingMethods.length === 0) {
+            loaded.shippingMethods = DEFAULT_SHIPPING.shippingMethods;
+          }
+          setShipping(loaded);
         }
       } catch (err) {
         console.error('Error loading shipping settings:', err);
@@ -285,6 +314,75 @@ export default function ShippingSettingsPage() {
                     <span className="font-semibold text-primary">Rs. {shipping.freeShippingThreshold.toLocaleString()}</span>
                   </div>
                 )}
+              </div>
+            </SettingsCard>
+
+            {/* ── Shipping Methods ──────────────────────────────────────────── */}
+            <SettingsCard
+              icon={Truck}
+              title="Shipping Methods"
+              subtitle="Manage the delivery options customers see at checkout. Free shipping (if enabled) applies to the selected method."
+            >
+              <div className="space-y-4">
+                {shipping.shippingMethods.map((method, idx) => (
+                  <div key={method.id} className="flex items-start gap-3 p-4 border border-[#E1E3E5] rounded-lg bg-surface-container-lowest">
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block font-label-md text-on-surface-variant text-xs mb-1">Method Name</label>
+                        <input
+                          type="text"
+                          className="w-full px-3 py-2 text-body-md border border-[#C9CCCF] rounded focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none transition-all"
+                          placeholder="e.g. Express Shipping"
+                          value={method.name}
+                          onChange={e => updateMethod(method.id, 'name', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-label-md text-on-surface-variant text-xs mb-1">Description</label>
+                        <input
+                          type="text"
+                          className="w-full px-3 py-2 text-body-md border border-[#C9CCCF] rounded focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none transition-all"
+                          placeholder="e.g. 1–2 Business Days"
+                          value={method.description}
+                          onChange={e => updateMethod(method.id, 'description', e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-label-md text-on-surface-variant text-xs mb-1">Charge (PKR)</label>
+                        <div className="flex items-center gap-2">
+                          <div className="relative flex-1">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">Rs.</span>
+                            <input
+                              type="number"
+                              min="0"
+                              className="w-full pl-10 pr-3 py-2 text-body-md border border-[#C9CCCF] rounded focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none transition-all"
+                              value={method.charge}
+                              onChange={e => updateMethod(method.id, 'charge', Number(e.target.value))}
+                            />
+                          </div>
+                          {shipping.shippingMethods.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeMethod(method.id)}
+                              className="p-2 text-error hover:bg-error/10 rounded transition-colors"
+                              title="Remove method"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={addMethod}
+                  className="flex items-center gap-2 text-primary font-label-md text-label-md hover:bg-primary/5 px-4 py-2 rounded transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Shipping Method
+                </button>
               </div>
             </SettingsCard>
 

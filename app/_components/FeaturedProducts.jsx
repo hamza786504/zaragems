@@ -1,49 +1,31 @@
-// components/FeaturedProducts.jsx
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import ProductCard from './ProductCard';
 
 const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&h=700&fit=crop';
 
-export default function FeaturedProducts() {
-    const [products, setProducts] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [lawnSlug, setLawnSlug] = useState('');
+export default function FeaturedProducts({ collectionSlug, title, initialProducts = null }) {
+    const [products, setProducts] = useState(initialProducts || []);
+    const [loading, setLoading] = useState(!initialProducts);
+    const fetched = useRef(false);
 
     useEffect(() => {
-        const fetchLawnProducts = async () => {
+        if (!collectionSlug) return;
+        if (initialProducts) return;
+        if (fetched.current) return;
+        fetched.current = true;
+
+        const fetchProducts = async () => {
             try {
-                // First, get all collections to find the Lawn collection ID
-                const collectionsRes = await fetch('/api/collections');
-                const collectionsData = await collectionsRes.json();
-
-                if (collectionsData.success) {
-                    const lawnCollection = collectionsData.collections.find(
-                        (c) => c.slug === 'lawn'
-                    );
-
-                    if (lawnCollection) {
-                        setLawnSlug(lawnCollection.slug);
-
-                        // Fetch products for this collection
-                        const productsRes = await fetch(
-                            `/api/products?collectionId=${lawnCollection._id}`
-                        );
-                        const productsData = await productsRes.json();
-                        
-                        if (productsData.success && productsData.products.length > 0) {
-                            // Limit to 8 products and ensure they have images
-                            const validProducts = productsData.products
-                                .slice(0, 8)
-                                .map(product => ({
-                                    ...product,
-                                    // Use first image from images array, or fallback to placeholder
-                                    displayImage: product.images?.[0] || PLACEHOLDER_IMAGE
-                                }));
-                            setProducts(validProducts);
-                        }
-                    }
+                const res = await fetch(`/api/showcase?collectionSlug=${encodeURIComponent(collectionSlug)}&limit=8`);
+                const data = await res.json();
+                if (data.success) {
+                    const mapped = data.products.map((p) => ({
+                        ...p,
+                        displayImage: p.image || PLACEHOLDER_IMAGE,
+                    }));
+                    setProducts(mapped);
                 }
             } catch (error) {
                 console.error('Error fetching products:', error);
@@ -51,16 +33,15 @@ export default function FeaturedProducts() {
                 setLoading(false);
             }
         };
-
-        fetchLawnProducts();
-    }, []);
+        fetchProducts();
+    }, [collectionSlug]);
 
     if (loading) {
         return (
             <section className="py-stack-lg px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto">
                 <div className="flex justify-between items-end mb-16">
                     <div>
-                        <h2 className="text-headline-md font-headline-md">Curated Favorites</h2>
+                        <h2 className="text-headline-md font-headline-md">{title || collectionSlug}</h2>
                         <p className="text-label-md font-label-md text-on-surface-variant tracking-widest uppercase mt-2">
                             Season&apos;s Most Desired
                         </p>
@@ -76,25 +57,25 @@ export default function FeaturedProducts() {
     }
 
     return (
-        <section className="py-stack-lg px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto">
+        <section className="p-1 max-w-container-max mx-auto">
             <div className="flex justify-between items-end mb-16">
                 <div>
-                    <h2 className="text-headline-lg font-headline-lg font-bold">Lawn</h2>
+                    <h2 className="text-headline-lg font-headline-lg font-bold">{title || collectionSlug}</h2>
                     <p className="text-label-md font-label-md text-on-surface-variant tracking-widest uppercase mt-2">
                         Season&apos;s Most Desired
                     </p>
                 </div>
-                {lawnSlug && (
+                {collectionSlug && (
                     <Link
                         className="hidden md:block text-label-md font-label-md text-secondary hover:underline underline-offset-8"
-                        href={`/collection/${lawnSlug}`}
+                        href={`/collection/${collectionSlug}`}
                     >
                         VIEW ALL PRODUCTS
                     </Link>
                 )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-2 gap-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-1 gap-y-2">
                 {products.length > 0 ? (
                     products.map((product) => (
                         <ProductCard
@@ -112,16 +93,16 @@ export default function FeaturedProducts() {
                     ))
                 ) : (
                     <p className="col-span-full text-center text-on-surface-variant">
-                        No Lawn products found
+                        No products found in {title || collectionSlug}
                     </p>
                 )}
             </div>
 
-            {products.length > 0 && lawnSlug && (
+            {products.length > 0 && collectionSlug && (
                 <div className="mt-16 flex justify-center">
                     <Link
-                        href={`/collection/${lawnSlug}`}
-                        className="border border-primary text-primary px-6 py-4 font-label-md uppercase tracking-[0.2em] hover:bg-primary hover:text-white transition-all duration-300 text-sm group "
+                        href={`/collection/${collectionSlug}`}
+                        className="border border-primary text-primary px-6 py-4 font-label-md uppercase tracking-[0.2em] hover:bg-primary hover:text-white transition-all duration-300 text-sm group"
                     >
                         SHOW MORE
                     </Link>

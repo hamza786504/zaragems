@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import client from '@/lib/sanityClient';
+import { slugify } from '@/lib/slugify';
 
 export async function GET(request, { params }) {
   try {
@@ -32,6 +33,12 @@ export async function PUT(request, { params }) {
     const existing = await client.fetch(`*[_type == "collection" && _id == $id][0]{_id}`, { id });
     if (!existing) {
       return NextResponse.json({ success: false, message: 'Collection not found' }, { status: 404 });
+    }
+
+    if (!body.slug && body.name) {
+      body.slug = slugify(body.name);
+    } else if (body.slug) {
+      body.slug = slugify(body.slug);
     }
 
     if (body.name || body.slug) {

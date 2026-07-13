@@ -90,8 +90,9 @@ export async function POST(request) {
       body.collectionId = null;
     }
 
-    // Generate slug from title if not provided
-    if (!body.slug && body.title) {
+    if (body.slug) {
+      body.slug = slugify(body.slug);
+    } else if (body.title) {
       body.slug = slugify(body.title);
     }
 

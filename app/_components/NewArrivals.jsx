@@ -8,31 +8,27 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 const products = [
     {
         id: 1,
-        title: 'Lawn Series',
-        slug: 'lawn',
-        image:
-            'https://lh3.googleusercontent.com/aida-public/AB6AXuA_4yCTcZW3Xmj2UW01xBKVc_jPQBGyZBrNBtWSTuuEkAiKxRNaW7pw5u8ue-Vc0ile_4Q2YCTWwRBXKju6ja-qFbmoY7MvFjO6gCYAWrUY7M8YYzKwzOdUE9Xbc5c9PM-fu_gY5filBjSqdvQF2SAMaGYI09o6UOh-eXSn68lkhsPMdjBSKFNt0SGf1hrMHy4OiEjy52zvrlRUFmaN2D5mjiuGOe52TH_ls0A8MXNZ_aOwEhozOpTdQrqTTqKJm1UdoHhiaLutxFjO',
+        title: 'Rings Collection',
+        slug: 'rings-collection',
+        image: '/rings.jpg',
     },
     {
         id: 2,
-        title: 'Festive Collection',
-        slug: 'chiffon',
-        image:
-            'https://lh3.googleusercontent.com/aida-public/AB6AXuCmQAvQovH1P62N-qGBQYl1BC_VbIMAHtI62RbfAkZrSCBf2ZmuFWqF_ORnHqtkfdSnzSDdCk7vZAvuHYtKmUUD6x3kZeDzeaZFPqeLcNZP7AJJNmXEMG6kYNvVi7xcUIn8w6Ag8Eo5uwINpyHfBs-OO54ZTB25Dtm-aPaviu4E72bBaVE7Gj9VheIkfZ5tfXqhmD3jtBSSfQhiItDzE1kcD62mhXGDK30SzThKSHaVwd17aFu_saWI6_C0i9qnbhVuyRruwtMtAZ0n',
+        title: 'HandCuff/Baracelts',
+        slug: 'handcuff-baracelts',
+        image: '/baracelts.jpg',
     },
     {
         id: 3,
-        title: 'Luxury Unstitched',
-        slug: '3pc',
-        image:
-            'https://lh3.googleusercontent.com/aida-public/AB6AXuBF0uGhBqFeiTpot2ewCnoSmQbYCMJCwqsJQxuDYkdu86KQBGstYFXuh3nUBKpe5NK7X_Soi60pirdc1ucUnsZMOFICCM92sWAI3C6hva160neSqlcXeoXXK0X-IhrfJ7YzbA3dkUr3GLsQn2Oa5a2qv07j5cvjLoTSvJiwifBhVnOr4pGpEVU4Shrq5Jq6VkvdV1t9kLE2rQ-i2B-Uk6eynS2d4B1WxE0SRVLN2V8eQ5s1SiA6hTvJWumVrvE22neyQHwMdafWUIcv',
+        title: 'Pendants/MalaSet',
+        slug: 'pendants-malaset',
+        image: '/rings.jpg',
     },
     {
         id: 4,
-        title: 'Festive Collection',
-        slug: 'chiffon',
-        image:
-            'https://lh3.googleusercontent.com/aida-public/AB6AXuCmQAvQovH1P62N-qGBQYl1BC_VbIMAHtI62RbfAkZrSCBf2ZmuFWqF_ORnHqtkfdSnzSDdCk7vZAvuHYtKmUUD6x3kZeDzeaZFPqeLcNZP7AJJNmXEMG6kYNvVi7xcUIn8w6Ag8Eo5uwINpyHfBs-OO54ZTB25Dtm-aPaviu4E72bBaVE7Gj9VheIkfZ5tfXqhmD3jtBSSfQhiItDzE1kcD62mhXGDK30SzThKSHaVwd17aFu_saWI6_C0i9qnbhVuyRruwtMtAZ0n',
+        title: 'Studs/Earings',
+        slug: 'studs-earings',
+        image: '/rings.jpg',
     },
 ];
 
@@ -71,7 +67,7 @@ export default function NewArrivals() {
                         Refresh your wardrobe with this week&apos;s new arrivals. Discover the latest trends,
                         collection highlights, and key pieces for the season.
                     </p>
-                    <Link href="/collection/lawn" className="text-sm group bg-primary text-on-primary px-6 py-4 font-label-xs uppercase tracking-[0.2em] w-fit transition-all duration-300 hover:bg-primary-container hover:scale-[1.02]">
+                    <Link href="/collection/rings-collection" className="text-sm group bg-primary text-on-primary px-6 py-4 font-label-xs uppercase tracking-[0.2em] w-fit transition-all duration-300 hover:bg-primary-container hover:scale-[1.02]">
                         SHOP NOW
                     </Link>
                 </div>

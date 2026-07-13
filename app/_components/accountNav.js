@@ -5,5 +5,4 @@ export const accountNavItems = [
     { id: 'profile', icon: 'person', label: 'Profile' },
     { id: 'orders', icon: 'package_2', label: 'Orders' },
     { id: 'address', icon: 'menu_book', label: 'Address Book' },
-    { id: 'account', icon: 'manage_accounts', label: 'Account Details' },
 ];

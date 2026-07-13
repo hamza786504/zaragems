@@ -1,59 +1,40 @@
 import { NextResponse } from 'next/server';
 import { publicClient } from '@/lib/sanityClientPublic';
 
-// Map of tab names → Sanity GROQ filter conditions
-// Adjust the productType/category field values to match what you use in your Sanity schema.
-const CATEGORY_FILTERS = {
-    Rings:       `productType == "Ring"    || productType == "Rings"`,
-    Handchain:   `productType == "Handchain" || productType == "Hand Chain"`,
-    Earrings:    `productType == "Earring"   || productType == "Studs" || productType == "Earrings"`,
-    Accessories: `isAccessory == true`,
-};
-
-// Lightweight projection — only the fields ProductCard actually needs.
-// Keeping it small means Sanity CDN serves smaller JSON and the client
-// parses it faster.
 const SHOWCASE_PROJECTION = `{
-    _id,
-    "id": _id,
-    title,
-    slug,
-    "price": "PKR " + string(price),
-    "priceNumeric": price,
+    _id, "id": _id, title, slug,
+    "price": "PKR " + string(price), "priceNumeric": price,
     "type": productType,
-    "image": images[0].asset->url,
-    sizes,
-    colors,
-    isAccessory
+    "image": coalesce(images[0], ""),
+    sizes, colors, isAccessory
 }`;
 
 export async function GET(request) {
     const { searchParams } = new URL(request.url);
-    const category = searchParams.get('category') || 'Rings';
+    const collectionSlug = searchParams.get('collectionSlug');
+    const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '4', 10), 1), 20);
 
-    const filter = CATEGORY_FILTERS[category];
-    if (!filter) {
-        return NextResponse.json({ success: false, error: 'Unknown category' }, { status: 400 });
+    if (!collectionSlug) {
+        return NextResponse.json({ success: false, error: 'collectionSlug is required' }, { status: 400 });
     }
 
     try {
-        const products = await publicClient.fetch(
-            `*[_type == "product" && status == "active" && (${filter})] | order(_createdAt desc) [0...4] ${SHOWCASE_PROJECTION}`
+        const collection = await publicClient.fetch(
+            `*[_type == "collection" && slug == $slug][0]{ _id }`,
+            { slug: collectionSlug }
         );
-
+        if (!collection) {
+            return NextResponse.json({ success: false, error: 'Collection not found' }, { status: 404 });
+        }
+        const products = await publicClient.fetch(
+            `*[_type == "product" && status == "active" && collectionId == $collectionId] | order(_createdAt desc) [0...${limit}] ${SHOWCASE_PROJECTION}`,
+            { collectionId: collection._id }
+        );
         return NextResponse.json(
             { success: true, products: products || [] },
-            {
-                status: 200,
-                headers: {
-                    // Edge/CDN cache for 5 minutes; stale-while-revalidate for another 30s
-                    // so the response never blocks a user while refreshing in the background.
-                    'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=30',
-                },
-            }
+            { status: 200, headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=30' } }
         );
     } catch (error) {
-        console.error('[showcase] Sanity fetch error:', error);
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }

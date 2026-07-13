@@ -24,7 +24,9 @@ export async function POST(request) {
   try {
     const body = await request.json();
 
-    if (!body.slug && body.name) {
+    if (body.slug) {
+      body.slug = slugify(body.slug);
+    } else if (body.name) {
       body.slug = slugify(body.name);
     }
 
