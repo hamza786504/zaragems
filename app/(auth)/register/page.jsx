@@ -8,7 +8,14 @@ import { useAuth } from '../../store/authContext';
 
 export default function RegisterPage() {
     const router = useRouter();
-    const { register } = useAuth();
+    const { register, isAuthenticated, loading } = useAuth();
+
+    // Already signed in — no need to register again; send to the account area.
+    useEffect(() => {
+        if (!loading && isAuthenticated) {
+            router.replace('/dashboard');
+        }
+    }, [loading, isAuthenticated, router]);
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',

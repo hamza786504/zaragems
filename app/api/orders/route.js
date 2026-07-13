@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import crypto from 'crypto';
 import client from '@/lib/sanityClient';
 import { withTimestamps } from '@/lib/sanityHelpers';
 import {
@@ -6,6 +7,48 @@ import {
   signCustomerToken,
   sessionCookie,
 } from '@/lib/customerAuth';
+
+// Persist the order's shipping address into the linked customer's address book
+// (the `addresses` array), de-duplicating against existing entries. This is what
+// makes a shopper's previously used checkout addresses show up next time they log
+// in and reach the checkout page.
+async function saveAddressToCustomerBook(customerId, payload) {
+  const { customer, address, apartment, city, country, postalCode, phone } = payload;
+  const nameParts = (customer?.name || '').split(' ');
+  const firstName = nameParts[0] || 'Customer';
+  const lastName = nameParts.slice(1).join(' ') || '';
+
+  const existing = await client.fetch(`*[_id == $id][0]{ addresses }`, { id: customerId });
+  const current = Array.isArray(existing?.addresses) ? existing.addresses : [];
+
+  const isDuplicate = current.some(
+    (a) =>
+      a.street === address &&
+      a.city === city &&
+      a.country === country &&
+      (a.postalCode || '') === (postalCode || '')
+  );
+  if (isDuplicate) return;
+
+  const newAddr = {
+    _key: crypto.randomUUID(),
+    firstName,
+    lastName,
+    street: address,
+    apartment: apartment || '',
+    city,
+    country,
+    postalCode: postalCode || '',
+    phone: phone || '',
+    isDefault: current.length === 0,
+  };
+
+  let next = [...current, newAddr];
+  if (newAddr.isDefault) {
+    next = next.map((a) => ({ ...a, isDefault: a._key === newAddr._key }));
+  }
+  await client.patch(customerId).set({ addresses: next }).commit();
+}
 
 const ORDER_PROJECTION = `{
   ...,
@@ -86,6 +129,7 @@ export async function POST(request) {
 
     // Handle customer account creation/login logic
     let authToken = null;
+    let customerId = null;
     if (body.customer?.email) {
       const email = body.customer.email.toLowerCase();
       const nameParts = (body.customer.name || '').split(' ');
@@ -105,9 +149,10 @@ export async function POST(request) {
         );
 
         if (existingCustomer) {
+          customerId = existingCustomer._id;
           // Update existing customer with any missing info
           await client
-            .patch(existingCustomer._id)
+            .patch(customerId)
             .set({
               phone: body.phone || '',
               address,
@@ -131,6 +176,7 @@ export async function POST(request) {
             totalSpent: body.total || 0,
             createdAt: new Date().toISOString(),
           });
+          customerId = created._id;
           // Issue a session token for the newly created account
           authToken = signCustomerToken(created);
         }
@@ -144,8 +190,9 @@ export async function POST(request) {
         );
 
         if (existingCustomer) {
+          customerId = existingCustomer._id;
           await client
-            .patch(existingCustomer._id)
+            .patch(customerId)
             .set({
               phone: body.phone || '',
               address,
@@ -155,7 +202,7 @@ export async function POST(request) {
             })
             .commit();
         } else {
-          await client.create({
+          const created = await client.create({
             _type: 'customer',
             firstName,
             lastName,
@@ -167,7 +214,19 @@ export async function POST(request) {
             totalSpent: body.total || 0,
             createdAt: new Date().toISOString(),
           });
+          customerId = created._id;
         }
+      }
+    }
+
+    // Save the shipping address into the customer's address book so it shows up
+    // (as a radio option) on their next checkout. Best-effort: a failure here must
+    // never break order placement.
+    if (customerId) {
+      try {
+        await saveAddressToCustomerBook(customerId, body);
+      } catch (addrErr) {
+        console.error('Failed to save address to customer book:', addrErr);
       }
     }
 

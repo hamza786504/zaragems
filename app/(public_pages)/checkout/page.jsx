@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useCart } from '../../store/cartContext';
+import { useAuth } from '../../store/authContext';
 
 const DEFAULT_SHIPPING_CONFIG = {
     cod: true,
@@ -23,6 +24,7 @@ const countries = [
 
 export default function CheckoutPage() {
     const { cartItems, clearCart } = useCart();
+    const { customer, isAuthenticated } = useAuth();
     const [shippingConfig, setShippingConfig] = useState(DEFAULT_SHIPPING_CONFIG);
     const [accountType, setAccountType] = useState('new'); // 'new' or 'existing'
     const [formData, setFormData] = useState({
@@ -45,6 +47,80 @@ export default function CheckoutPage() {
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [orderSuccess, setOrderSuccess] = useState(null); // holds placed order details
+
+    // ── Saved addresses for logged-in customers ───────────────────────────────
+    const [savedAddresses, setSavedAddresses] = useState([]);
+    const [selectedAddressKey, setSelectedAddressKey] = useState(null);
+    const [addressesLoaded, setAddressesLoaded] = useState(false);
+
+    const isLoggedIn = isAuthenticated && !!customer;
+
+    // Map a saved address country value to one of the checkout country options.
+    const toCheckoutCountry = (c) => {
+        if (c === 'United States') return 'USA';
+        return c || 'Country/Region';
+    };
+
+    // When the customer is logged in, load any saved addresses from their
+    // address book and pre-fill the form so checkout is one-click.
+    useEffect(() => {
+        if (!isLoggedIn) return;
+        let active = true;
+        fetch('/api/account/addresses')
+            .then((r) => r.json())
+            .then((data) => {
+                if (!active || !data.success) return;
+                const addrs = Array.isArray(data.addresses) ? data.addresses : [];
+                setSavedAddresses(addrs);
+                // Auto-select the default (or first) address and fill the form.
+                const preferred = addrs.find((a) => a.isDefault) || addrs[0];
+                setSelectedAddressKey(preferred?._key || null);
+                setFormData((prev) => ({
+                    ...prev,
+                    email: customer.email || prev.email,
+                    firstName: preferred?.firstName || prev.firstName,
+                    lastName: preferred?.lastName || prev.lastName,
+                    address: preferred?.street || prev.address,
+                    apartment: preferred?.apartment || prev.apartment,
+                    city: preferred?.city || prev.city,
+                    country: toCheckoutCountry(preferred?.country),
+                    postalCode: preferred?.postalCode || prev.postalCode,
+                    phone: preferred?.phone || prev.phone,
+                }));
+            })
+            .catch(() => {})
+            .finally(() => {
+                if (active) setAddressesLoaded(true);
+            });
+        return () => {
+            active = false;
+        };
+    }, [isLoggedIn, customer]);
+
+    // Fill the shipping form from a saved address when the user picks one.
+    const selectSavedAddress = (addr) => {
+        setSelectedAddressKey(addr._key);
+        setFormData((prev) => ({
+            ...prev,
+            firstName: addr.firstName || prev.firstName,
+            lastName: addr.lastName || prev.lastName,
+            address: addr.street || prev.address,
+            apartment: addr.apartment || prev.apartment,
+            city: addr.city || prev.city,
+            country: toCheckoutCountry(addr.country),
+            postalCode: addr.postalCode || prev.postalCode,
+            phone: addr.phone || prev.phone,
+        }));
+        setErrors((prev) => ({
+            ...prev,
+            firstName: '',
+            lastName: '',
+            address: '',
+            city: '',
+            country: '',
+            phone: '',
+        }));
+    };
 
     const headerRef = useRef(null);
     const lastScrollRef = useRef(0);
@@ -122,8 +198,8 @@ export default function CheckoutPage() {
             newErrors.phone = 'Please enter a valid phone number.';
         if (cartItems.length === 0) newErrors.cart = 'Your cart is empty.';
 
-        // Validate password fields only for new account
-        if (accountType === 'new') {
+        // Validate password fields only for new (guest) accounts
+        if (!isLoggedIn && accountType === 'new') {
             if (!formData.password) newErrors.password = 'Password is required.';
             else if (formData.password.length < 6)
                 newErrors.password = 'Password must be at least 6 characters.';
@@ -175,8 +251,8 @@ export default function CheckoutPage() {
                     quantity: item.quantity,
                     price: item.price,
                 })),
-                // Include password only for new account creation
-                ...(accountType === 'new' && { password: formData.password }),
+                // Include password only for new (guest) account creation
+                ...(!isLoggedIn && accountType === 'new' && { password: formData.password }),
             };
 
             const res = await fetch('/api/orders', {
@@ -298,36 +374,43 @@ export default function CheckoutPage() {
                             <section>
                                 <div className="flex justify-between items-end mb-6">
                                     <h2 className="text-headline-sm font-headline-sm text-primary">Contact Information</h2>
-                                    <div className="flex items-center gap-4">
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                className="w-4 h-4 text-secondary focus:ring-secondary/20"
-                                                id="accountTypeNew"
-                                                name="accountType"
-                                                type="radio"
-                                                value="new"
-                                                checked={accountType === 'new'}
-                                                onChange={(e) => setAccountType(e.target.value)}
-                                            />
-                                            <label className="text-label-sm font-label-sm text-on-surface-variant" htmlFor="accountTypeNew">
-                                                New Account
-                                            </label>
+                                    {isLoggedIn ? (
+                                        <span className="flex items-center gap-2 text-label-sm font-label-sm text-secondary">
+                                            <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                                            Logged in as {customer.email}
+                                        </span>
+                                    ) : (
+                                        <div className="flex items-center gap-4">
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    className="w-4 h-4 text-secondary focus:ring-secondary/20"
+                                                    id="accountTypeNew"
+                                                    name="accountType"
+                                                    type="radio"
+                                                    value="new"
+                                                    checked={accountType === 'new'}
+                                                    onChange={(e) => setAccountType(e.target.value)}
+                                                />
+                                                <label className="text-label-sm font-label-sm text-on-surface-variant" htmlFor="accountTypeNew">
+                                                    New Account
+                                                </label>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    className="w-4 h-4 text-secondary focus:ring-secondary/20"
+                                                    id="accountTypeExisting"
+                                                    name="accountType"
+                                                    type="radio"
+                                                    value="existing"
+                                                    checked={accountType === 'existing'}
+                                                    onChange={(e) => setAccountType(e.target.value)}
+                                                />
+                                                <label className="text-label-sm font-label-sm text-on-surface-variant" htmlFor="accountTypeExisting">
+                                                    Already have an account
+                                                </label>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <input
-                                                className="w-4 h-4 text-secondary focus:ring-secondary/20"
-                                                id="accountTypeExisting"
-                                                name="accountType"
-                                                type="radio"
-                                                value="existing"
-                                                checked={accountType === 'existing'}
-                                                onChange={(e) => setAccountType(e.target.value)}
-                                            />
-                                            <label className="text-label-sm font-label-sm text-on-surface-variant" htmlFor="accountTypeExisting">
-                                                Already have an account
-                                            </label>
-                                        </div>
-                                    </div>
+                                    )}
                                 </div>
                                 <div className="space-y-4">
                                     <div className="relative group">
@@ -339,12 +422,13 @@ export default function CheckoutPage() {
                                             placeholder="Email address"
                                             value={formData.email}
                                             onChange={handleInputChange}
+                                            readOnly={isLoggedIn}
                                         />
                                         {errors.email && <p className="text-error text-[11px] mt-1 px-1">{errors.email}</p>}
                                     </div>
 
                                     {/* Password fields for new account */}
-                                    {accountType === 'new' && (
+                                    {!isLoggedIn && accountType === 'new' && (
                                         <>
                                             <div className="relative group">
                                                 <input
@@ -392,6 +476,77 @@ export default function CheckoutPage() {
                             {/* Shipping Address */}
                             <section className="pt-4 space-y-6">
                                 <h2 className="text-headline-sm font-headline-sm text-primary">Shipping Address</h2>
+
+                                {/* Saved addresses from the customer's address book */}
+                                {isLoggedIn && (
+                                    <div className="space-y-3">
+                                        {!addressesLoaded ? (
+                                            <p className="text-label-sm text-on-surface-variant flex items-center gap-2">
+                                                <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+                                                Loading saved addresses…
+                                            </p>
+                                        ) : savedAddresses.length > 0 ? (
+                                            <>
+                                                <p className="text-label-sm text-on-surface-variant">
+                                                    Choose a saved address or fill in the form below.
+                                                </p>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                    {savedAddresses.map((addr) => {
+                                                        const selected = addr._key === selectedAddressKey;
+                                                        return (
+                                                            <label
+                                                                key={addr._key}
+                                                                className={`flex items-start gap-3 text-left p-4 border cursor-pointer transition-all duration-200 ${
+                                                                    selected
+                                                                        ? 'border-secondary bg-secondary/5'
+                                                                        : 'border-secondary/20 hover:border-secondary/60'
+                                                                }`}
+                                                            >
+                                                                <input
+                                                                    type="radio"
+                                                                    name="savedAddress"
+                                                                    value={addr._key}
+                                                                    checked={selected}
+                                                                    onChange={() => selectSavedAddress(addr)}
+                                                                    className="mt-1 w-4 h-4 text-secondary focus:ring-secondary/20 border-secondary"
+                                                                />
+                                                                <span className="flex-1">
+                                                                    <span className="flex items-center justify-between mb-1">
+                                                                        <span className="font-label-sm font-label-sm text-primary uppercase tracking-wider">
+                                                                            {`${addr.firstName || ''} ${addr.lastName || ''}`.trim() || 'Address'}
+                                                                        </span>
+                                                                        {addr.isDefault && (
+                                                                            <span className="text-[10px] uppercase tracking-wider text-secondary">
+                                                                                Default
+                                                                            </span>
+                                                                        )}
+                                                                    </span>
+                                                                    <span className="block text-label-sm text-on-surface-variant leading-snug">
+                                                                        {[addr.street, addr.apartment, addr.city, addr.country]
+                                                                            .filter(Boolean)
+                                                                            .join(', ')}
+                                                                    </span>
+                                                                    {addr.phone && (
+                                                                        <span className="block text-label-sm text-on-surface-variant mt-1">{addr.phone}</span>
+                                                                    )}
+                                                                </span>
+                                                            </label>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <p className="text-label-sm text-on-surface-variant">
+                                                No saved addresses yet — add one from your{' '}
+                                                <Link href="/address" className="text-secondary underline">
+                                                    Address Book
+                                                </Link>{' '}
+                                                or fill in the form below.
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <input

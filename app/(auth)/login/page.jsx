@@ -1,12 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../store/authContext';
 export default function LoginPage() {
     const router = useRouter();
-    const { login } = useAuth();
+    const { login, isAuthenticated, loading } = useAuth();
+
+    // Already signed in — send the customer to their account area.
+    useEffect(() => {
+        if (!loading && isAuthenticated) {
+            router.replace('/dashboard');
+        }
+    }, [loading, isAuthenticated, router]);
+
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -16,6 +24,8 @@ export default function LoginPage() {
     const [isSuccess, setIsSuccess] = useState(false);
     const [error, setError] = useState('');
     const [focusedField, setFocusedField] = useState(null);
+
+    if (loading || isAuthenticated) return null;
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;

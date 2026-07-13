@@ -2,6 +2,7 @@
 // Single-fetch dashboard: data is fetched ONCE on the server, then passed
 // as props to each slot's client component. No more 8 separate HTTP requests.
 
+import { headers } from 'next/headers';
 import SeedButton from './SeedButton';
 import MetricCardsClient from './@metrics/MetricCardsClient';
 import SalesTrendClient from './@salesTrend/SalesTrendClient';
@@ -16,7 +17,15 @@ const PKR = (val) => `Rs ${Number(val).toLocaleString(undefined, { minimumFracti
 
 async function fetchDashboardStats() {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/dashboard/stats`, { cache: 'no-store' });
+    // Resolve the origin from the incoming request so the self-fetch always
+    // hits THIS app's server, regardless of which port it runs on (3000, 3001, …)
+    // or whether it's behind a proxy. Avoids hardcoding localhost:3000, which can
+    // point at a different app running on that port.
+    const h = await headers();
+    const host = h.get('host') || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const protocol = h.get('x-forwarded-proto') || (host.startsWith('https') ? 'https' : 'http');
+    const base = host.startsWith('http') ? host : `${protocol}://${host}`;
+    const res = await fetch(`${base}/api/dashboard/stats`, { cache: 'no-store' });
     const data = await res.json();
     return data.success ? data : null;
   } catch {
@@ -111,7 +120,7 @@ export default async function DashboardPage() {
 
       {/* ─── All slots rendered with pre-fetched data (no extra HTTP calls) ─── */}
       <MetricCardsClient cards={metricCards} />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-lg">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-sm">
         <SalesTrendClient salesTrendData={salesTrendData} />
         <RecentOrdersClient recentOrders={recentOrders} />
       </div>

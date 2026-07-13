@@ -226,8 +226,6 @@ export default function ProductPageClient({ initialProduct }) {
                     </header>
 
                     <div className="flex flex-col gap-6">
-                        <p className="text-body-md text-on-surface-variant leading-relaxed">{product.description}</p>
-
                         {/* Color */}
                         {product.colors && product.colors.length > 0 && (
                             <div className="flex flex-col gap-3">
@@ -321,13 +319,11 @@ export default function ProductPageClient({ initialProduct }) {
                         {/* Accordion Specs */}
                         <div className="flex flex-col border-t border-outline-variant mt-8">
                             {['Product Details', 'Care Instructions', 'Shipping & Returns'].map((label, idx) => {
+                                // Hide the Product Details accordion when there's no real description.
+                                if (idx === 0 && (!product.description || product.description.trim().length <= 1)) return null;
                                 const content = [
-                                    <div key="details" className="pb-6 text-body-md text-on-surface-variant flex flex-col gap-2">
-                                        <p>• Embroidered Chiffon Front (1.25m)</p>
-                                        <p>• Plain Chiffon Back (1.25m)</p>
-                                        <p>• Embroidered Chiffon Sleeves (0.75m)</p>
-                                        <p>• Dyed Raw Silk Trouser (2.5m)</p>
-                                        <p>• Embroidered Net Dupatta (2.5m)</p>
+                                    <div key="details" className="pb-6 text-body-md text-on-surface-variant leading-relaxed whitespace-pre-line">
+                                        {product.description}
                                     </div>,
                                     <div key="care" className="pb-6 text-body-md text-on-surface-variant">
                                         Dry clean only. Store in a cool, dry place. Avoid contact with perfume or chemicals to preserve the metallic embroidery.

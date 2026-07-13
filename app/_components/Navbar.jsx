@@ -2,9 +2,11 @@
 'use client';
 import Image from 'next/image';
 import CartDrawer from './CartDrawer';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useCart } from '../store/cartContext';
+import { useAuth } from '../store/authContext';
 import { useNavMenu } from '../store/navMenuContext';
 import { useSiteSettings } from '../store/siteSettingsContext';
 import {
@@ -18,9 +20,35 @@ import {
 
 export default function Navbar() {
   const { cartItems, updateQuantity, removeFromCart } = useCart();
+  const { isAuthenticated, customer, logout } = useAuth();
+  const router = useRouter();
   const [isCartOpen, setIsCartOpen]       = useState(false);
   const [menuOpen, setMenuOpen]           = useState(false);
   const [activeSubmenu, setActiveSubmenu] = useState(null);
+  const [userMenuOpen, setUserMenuOpen]   = useState(false);
+  const userMenuRef = useRef(null);
+
+  const handleLogout = async () => {
+    setUserMenuOpen(false);
+    try {
+      await logout();
+    } catch {
+      // ignore — clear local state regardless
+    }
+    router.push('/login');
+  };
+
+  // Close the user dropdown when clicking outside of it.
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const onClick = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [userMenuOpen]);
 
   // ── Dynamic header menu, fetched server-side and provided via context ──────
   // so it's present in the very first render (no client-side fetch/flash).
@@ -92,12 +120,73 @@ export default function Navbar() {
 
           {/* Actions (Right Side) */}
           <div className="flex items-center space-x-3 md:space-x-4">
-            <Link
-              href="/login"
-              className="text-primary hover:text-secondary transition-colors duration-300 active:scale-95 duration-150 ease-in-out flex items-center justify-center"
-            >
-              <User className="w-5 h-5 md:w-5 md:h-5" />
-            </Link>
+            {/* User account — dropdown when signed in, redirect to login otherwise */}
+            <div className="relative" ref={userMenuRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isAuthenticated) {
+                    router.push('/login');
+                  } else {
+                    setUserMenuOpen((open) => !open);
+                  }
+                }}
+                className="text-primary hover:text-secondary transition-colors duration-300 active:scale-95 flex items-center justify-center"
+                aria-label="Account"
+                aria-haspopup="menu"
+                aria-expanded={userMenuOpen}
+              >
+                <User className="w-5 h-5 md:w-5 md:h-5" />
+              </button>
+
+              {isAuthenticated && userMenuOpen && (
+                <div
+                  role="menu"
+                  className="absolute right-0 mt-2 w-56 bg-surface border border-secondary/20 shadow-xl z-50 rounded-sm py-2"
+                >
+                  <div className="px-4 py-2 border-b border-secondary/10 mb-1">
+                    <p className="font-label-sm text-label-sm text-primary font-medium truncate">
+                      {customer?.name || 'My Account'}
+                    </p>
+                    <p className="text-[11px] text-on-surface-variant truncate">
+                      {customer?.email}
+                    </p>
+                  </div>
+                  <Link
+                    href="/dashboard"
+                    role="menuitem"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="block px-4 py-2.5 font-label-md text-label-md text-on-surface-variant hover:bg-secondary/10 hover:text-secondary transition-colors"
+                  >
+                    Dashboard
+                  </Link>
+                  <Link
+                    href="/profile"
+                    role="menuitem"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="block px-4 py-2.5 font-label-md text-label-md text-on-surface-variant hover:bg-secondary/10 hover:text-secondary transition-colors"
+                  >
+                    Profile
+                  </Link>
+                  <Link
+                    href="/address"
+                    role="menuitem"
+                    onClick={() => setUserMenuOpen(false)}
+                    className="block px-4 py-2.5 font-label-md text-label-md text-on-surface-variant hover:bg-secondary/10 hover:text-secondary transition-colors"
+                  >
+                    Addresses
+                  </Link>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={handleLogout}
+                    className="w-full text-left px-4 py-2.5 font-label-md text-label-md text-error hover:bg-error-container transition-colors"
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
             <button
               onClick={() => setIsCartOpen(true)}
               className="text-primary hover:text-secondary transition-colors duration-300 active:scale-95 duration-150 ease-in-out relative flex items-center justify-center"
