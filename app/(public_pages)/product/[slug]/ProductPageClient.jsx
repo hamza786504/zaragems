@@ -326,7 +326,7 @@ export default function ProductPageClient({ initialProduct }) {
                                         {product.description}
                                     </div>,
                                     <div key="care" className="pb-6 text-body-md text-on-surface-variant">
-                                        Dry clean only. Store in a cool, dry place. Avoid contact with perfume or chemicals to preserve the metallic embroidery.
+                                        Store in the provided suede pouch or a lined jewellery box. Avoid contact with perfume, lotions, and harsh chemicals. Clean gently with a soft, dry cloth to preserve the gemstone’s brilliance.
                                     </div>,
                                     <div key="shipping" className="pb-6 text-body-md text-on-surface-variant">
                                         Complimentary shipping on all domestic orders above PKR 10,000. Returns accepted within 7 days in original condition.
