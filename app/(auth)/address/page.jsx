@@ -5,13 +5,8 @@ import Navbar from '../../_components/Navbar';
 import Sidebar from '../../_components/Dashboard/Sidebar';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-
-// Sample user data
-const userData = {
-    name: 'Nazish',
-    fullName: 'Nazish Ahmed',
-    email: 'nazish@example.com',
-};
+import { useAuth } from '../../store/authContext';
+import { AuthGuard } from '../../_components/AuthGuard';
 
 // Sample addresses data
 const initialAddresses = [
@@ -65,6 +60,7 @@ const initialFormData = {
 };
 
 export default function AddressBookPage() {
+    const { customer, isAuthenticated } = useAuth();
     const router = useRouter();
     const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
     const [showForm, setShowForm] = useState(false);
@@ -72,6 +68,43 @@ export default function AddressBookPage() {
     const [addresses, setAddresses] = useState(initialAddresses);
     const [formData, setFormData] = useState(initialFormData);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [loadingAddresses, setLoadingAddresses] = useState(true);
+
+    // Map DB address shape -> card shape used by the UI
+    const mapAddress = (a) => ({
+        id: a._key,
+        name: `${a.firstName || ''} ${a.lastName || ''}`.trim(),
+        street: a.street,
+        city: [a.city, a.apartment].filter(Boolean).join(', '),
+        province: [a.postalCode, a.country].filter(Boolean).join(', '),
+        country: a.country,
+        phone: a.phone,
+        type: a.isDefault ? 'Default Shipping' : 'Other',
+        typeColor: a.isDefault
+            ? 'bg-secondary-container/30 text-secondary'
+            : 'bg-surface-container-high text-on-surface-variant',
+    });
+
+    // Load saved addresses for the logged-in customer
+    const loadAddresses = async () => {
+        setLoadingAddresses(true);
+        try {
+            const res = await fetch('/api/account/addresses');
+            const data = await res.json();
+            if (data.success && Array.isArray(data.addresses)) {
+                setAddresses(data.addresses.map(mapAddress));
+            }
+        } catch {
+            // keep sample fallback on error
+        } finally {
+            setLoadingAddresses(false);
+        }
+    };
+
+    useEffect(() => {
+        if (isAuthenticated) loadAddresses();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isAuthenticated]);
 
     // Toggle form modal
     const toggleForm = () => {
@@ -106,9 +139,16 @@ export default function AddressBookPage() {
     };
 
     // Handle delete address
-    const handleDelete = (addressId) => {
-        if (window.confirm('Are you sure you want to delete this address?')) {
-            setAddresses(prev => prev.filter(addr => addr.id !== addressId));
+    const handleDelete = async (addressId) => {
+        if (!window.confirm('Are you sure you want to delete this address?')) return;
+        // Optimistic remove, then sync with the server
+        setAddresses(prev => prev.filter(addr => addr.id !== addressId));
+        try {
+            await fetch(`/api/account/addresses?key=${encodeURIComponent(addressId)}`, {
+                method: 'DELETE',
+            });
+        } catch {
+            loadAddresses(); // revert on failure
         }
     };
 
@@ -127,56 +167,31 @@ export default function AddressBookPage() {
         setIsSubmitting(true);
 
         try {
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            const newAddress = {
-                id: editingAddress || `addr-${Date.now()}`,
-                name: `${formData.firstName} ${formData.lastName}`.trim(),
+            const payload = {
+                firstName: formData.firstName,
+                lastName: formData.lastName,
                 street: formData.street,
+                apartment: formData.apartment,
                 city: formData.city,
-                province: `${formData.city}, ${formData.postalCode}`,
                 country: formData.country,
+                postalCode: formData.postalCode,
                 phone: formData.phone,
-                type: formData.isDefault ? 'Default Shipping' : 'Other',
-                typeColor: formData.isDefault 
-                    ? 'bg-secondary-container/30 text-secondary' 
-                    : 'bg-surface-container-high text-on-surface-variant',
+                isDefault: !!formData.isDefault,
             };
 
-            if (editingAddress) {
-                // Update existing address
-                setAddresses(prev => prev.map(addr => 
-                    addr.id === editingAddress ? newAddress : addr
-                ));
-                // If this is set as default, remove default from others
-                if (formData.isDefault) {
-                    setAddresses(prev => prev.map(addr => ({
-                        ...addr,
-                        type: addr.id === editingAddress ? 'Default Shipping' : 'Other',
-                        typeColor: addr.id === editingAddress 
-                            ? 'bg-secondary-container/30 text-secondary'
-                            : 'bg-surface-container-high text-on-surface-variant',
-                    })));
-                }
-            } else {
-                // Add new address
-                // If this is set as default, update all other addresses
-                if (formData.isDefault) {
-                    setAddresses(prev => [
-                        ...prev.map(addr => ({
-                            ...addr,
-                            type: 'Other',
-                            typeColor: 'bg-surface-container-high text-on-surface-variant',
-                        })),
-                        newAddress,
-                    ]);
-                } else {
-                    setAddresses(prev => [...prev, newAddress]);
-                }
+            const res = await fetch('/api/account/addresses', {
+                method: editingAddress ? 'PUT' : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(editingAddress ? { ...payload, _key: editingAddress } : payload),
+            });
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error || 'Failed to save address');
             }
 
-            // Close form and reset
+            // Reload from server so the list stays in sync
+            await loadAddresses();
             toggleForm();
             setIsSubmitting(false);
         } catch (error) {
@@ -214,6 +229,7 @@ export default function AddressBookPage() {
     }, [showForm, isMobileDrawerOpen]);
 
     return (
+        <AuthGuard>
         <div className="min-h-screen flex flex-col">
             {/* Global Styles */}
             <style jsx global>{`
@@ -294,7 +310,11 @@ export default function AddressBookPage() {
                 </div>
                 <div className="overflow-y-auto h-full pb-20">
                     <Sidebar
-                        userData={userData}
+                        userData={{
+                            name: customer?.name || customer?.firstName || 'Guest',
+                            fullName: `${customer?.firstName || ''} ${customer?.lastName || ''}`.trim() || 'Guest User',
+                            email: customer?.email || 'guest@example.com',
+                        }}
                         activeNav="address"
                         setActiveNav={(id) => {
                             setIsMobileDrawerOpen(false);
@@ -312,7 +332,11 @@ export default function AddressBookPage() {
                     {/* Desktop Sidebar */}
                     <div className="hidden md:block md:col-span-3">
                         <Sidebar
-                            userData={userData}
+                            userData={{
+                                name: customer?.name || customer?.firstName || 'Guest',
+                                fullName: `${customer?.firstName || ''} ${customer?.lastName || ''}`.trim() || 'Guest User',
+                                email: customer?.email || 'guest@example.com',
+                            }}
                             activeNav="address"
                             setActiveNav={(id) => router.push(`/${id}`)}
                             navItems={navItems}
@@ -661,5 +685,6 @@ export default function AddressBookPage() {
                 </div>
             </footer>
         </div>
+        </AuthGuard>
     );
 }

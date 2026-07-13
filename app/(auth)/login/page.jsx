@@ -2,7 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '../../store/authContext';
 export default function LoginPage() {
+    const router = useRouter();
+    const { login } = useAuth();
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -10,6 +14,7 @@ export default function LoginPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitText, setSubmitText] = useState('Sign In');
     const [isSuccess, setIsSuccess] = useState(false);
+    const [error, setError] = useState('');
     const [focusedField, setFocusedField] = useState(null);
 
     const handleInputChange = (e) => {
@@ -30,26 +35,23 @@ export default function LoginPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         if (isSubmitting) return;
 
         setIsSubmitting(true);
         setSubmitText('Authenticating...');
+        setError('');
 
-        // Simulate authentication
         try {
-            await new Promise((resolve) => setTimeout(resolve, 1500));
-            
+            await login(formData.email, formData.password);
+
             setIsSuccess(true);
             setSubmitText('Welcome');
-            
-            // Redirect or handle successful login here
-            // router.push('/dashboard');
-            
-        } catch (error) {
+            router.push('/dashboard');
+        } catch (err) {
             setIsSubmitting(false);
             setSubmitText('Sign In');
-            // Handle error
+            setError(err.message || 'Invalid email or password');
         }
     };
 
@@ -161,6 +163,13 @@ export default function LoginPage() {
                                     <div className="underline-bar absolute bottom-0 left-0" />
                                 </div>
                             </div>
+
+                            {/* Error Message */}
+                            {error && (
+                                <p className="font-body-sm text-sm text-red-600 bg-red-50 border border-red-200 px-3 py-2">
+                                    {error}
+                                </p>
+                            )}
 
                             {/* Actions */}
                             <div className="pt-unit">

@@ -429,7 +429,7 @@ const OrdersPage = () => {
                           />
                         </td>
                         <td className="px-lg py-4">
-                          <Link className="text-primary font-label-md text-label-md font-bold hover:underline" href={`/admin/orders/${order._id}`}>
+                          <Link className="text-primary font-label-md text-label-md font-bold hover:underline" href={`/admin/orders/order-details/${order._id}`}>
                             {order.orderId}
                           </Link>
                           <div className="flex gap-1 mt-1">

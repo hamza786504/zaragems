@@ -4,13 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import Navbar from '../../_components/Navbar';
 import Sidebar from '../../_components/Dashboard/Sidebar';
 import Link from 'next/link';
-
-// Sample user data
-const userData = {
-    name: 'Nazish',
-    fullName: 'Nazish Ahmed',
-    email: 'nazish@example.com',
-};
+import { useAuth } from '../../store/authContext';
+import { AuthGuard } from '../../_components/AuthGuard';
 
 // Extended sample orders data
 const allOrders = [
@@ -31,26 +26,64 @@ const allOrders = [
 // Navigation items
 const navItems = [
     { id: 'dashboard', icon: 'grid_view', label: 'Dashboard', active: true },
-    { id: 'profile', icon: 'person', label: 'Profile', active: true },
-    { id: 'orders', icon: 'package_2', label: 'Orders', active: false },
+    { id: 'profile', icon: 'person', label: 'Profile', active: false },
+    { id: 'orders', icon: 'package_2', label: 'Orders', active: true },
     { id: 'address', icon: 'menu_book', label: 'Address Book', active: false },
     { id: 'account', icon: 'manage_accounts', label: 'Account Details', active: false },
 ];
 
 const ITEMS_PER_PAGE = 5;
 
+const STATUS_COLORS = {
+    Delivered: 'bg-surface-container-highest text-on-surface',
+    Processing: 'bg-primary-fixed text-on-primary-fixed-variant',
+    Shipped: 'bg-secondary-fixed text-on-secondary-fixed',
+    Cancelled: 'bg-error-container text-on-error-container',
+    Pending: 'bg-tertiary-container/20 text-tertiary',
+    'Partially Paid': 'bg-surface-container-highest text-on-surface',
+    Refunded: 'bg-error-container text-on-error-container',
+    Unfulfilled: 'bg-tertiary-container/20 text-tertiary',
+    Fulfilled: 'bg-primary-fixed text-on-primary-fixed-variant',
+    Returned: 'bg-error-container text-on-error-container',
+};
+
+const getStatusColor = (status) =>
+    STATUS_COLORS[status] || 'bg-surface-container-highest text-on-surface';
+
+const formatTotal = (value) =>
+    `Rs. ${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
 export default function Orders() {
+    const { customer, isAuthenticated } = useAuth();
     const [activeNav, setActiveNav] = useState('orders');
     const [isNavScrolled, setIsNavScrolled] = useState(false);
     const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+    const [userOrders, setUserOrders] = useState(allOrders);
     const navRef = useRef(null);
 
-    // Calculate pagination
-    const totalPages = Math.ceil(allOrders.length / ITEMS_PER_PAGE);
+    // Fetch user's real orders
+    useEffect(() => {
+        if (isAuthenticated && customer?.email) {
+            fetch(`/api/account/orders`)
+                .then((res) => res.json())
+                .then((data) => {
+                    if (data.success && data.orders) {
+                        setUserOrders(data.orders);
+                    }
+                })
+                .catch(() => {
+                    // Fallback to sample data if API fails
+                    setUserOrders(allOrders);
+                });
+        }
+    }, [isAuthenticated, customer?.email]);
+
+    // Calculate pagination based on real user orders
+    const totalPages = Math.ceil(userOrders.length / ITEMS_PER_PAGE);
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
-    const currentOrders = allOrders.slice(startIndex, endIndex);
+    const currentOrders = userOrders.slice(startIndex, endIndex);
 
     // Handle page change
     const handlePageChange = (pageNumber) => {
@@ -145,6 +178,7 @@ export default function Orders() {
     }, [isMobileDrawerOpen]);
 
     return (
+        <AuthGuard>
         <div className="min-h-screen flex flex-col">
             {/* Global Styles */}
             <style jsx global>{`
@@ -215,7 +249,11 @@ export default function Orders() {
                 </div>
                 <div className="overflow-y-auto h-full pb-20">
                     <Sidebar
-                        userData={userData}
+                        userData={{
+                            name: customer?.name || customer?.firstName || 'Guest',
+                            fullName: `${customer?.firstName || ''} ${customer?.lastName || ''}`.trim() || 'Guest User',
+                            email: customer?.email || 'guest@example.com',
+                        }}
                         activeNav={activeNav}
                         setActiveNav={(id) => {
                             setActiveNav(id);
@@ -233,7 +271,11 @@ export default function Orders() {
                     {/* Desktop Sidebar */}
                     <div className="hidden md:block md:col-span-3">
                         <Sidebar
-                            userData={userData}
+                            userData={{
+                                name: customer?.name || customer?.firstName || 'Guest',
+                                fullName: `${customer?.firstName || ''} ${customer?.lastName || ''}`.trim() || 'Guest User',
+                                email: customer?.email || 'guest@example.com',
+                            }}
                             activeNav={activeNav}
                             setActiveNav={setActiveNav}
                             navItems={navItems}
@@ -250,7 +292,7 @@ export default function Orders() {
                                         All Orders
                                     </h2>
                                     <p className="text-label-sm text-on-surface-variant mt-1">
-                                        Showing {startIndex + 1}-{Math.min(endIndex, allOrders.length)} of {allOrders.length} orders
+                                        Showing {startIndex + 1}-{Math.min(endIndex, userOrders.length)} of {userOrders.length} orders
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-4">
@@ -296,29 +338,32 @@ export default function Orders() {
                                         <tbody className="font-body-md text-body-md divide-y premium-border">
                                             {currentOrders.map((order) => (
                                                 <tr
-                                                    key={order.id}
+                                                    key={order._id || order.id}
                                                     className="hover:bg-surface-container-lowest transition-colors"
                                                 >
                                                     <td className="p-4 text-primary font-medium">
-                                                        {order.id}
+                                                        {order.orderId || order.id}
                                                     </td>
                                                     <td className="p-4 text-on-surface-variant">
                                                         {order.date}
                                                     </td>
                                                     <td className="p-4">
                                                         <span
-                                                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-label-sm ${order.statusColor}`}
+                                                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-label-sm ${getStatusColor(order.status)}`}
                                                         >
                                                             {order.status}
                                                         </span>
                                                     </td>
                                                     <td className="p-4 text-primary font-display-lg text-body-lg">
-                                                        {order.total}
+                                                        {formatTotal(order.total)}
                                                     </td>
                                                     <td className="p-4 text-right">
-                                                        <button className="font-label-sm text-label-sm text-secondary hover:text-primary font-bold">
+                                                        <Link
+                                                            href={`/orders/${order._id || order.id}`}
+                                                            className="font-label-sm text-label-sm text-secondary hover:text-primary font-bold"
+                                                        >
                                                             View Details
-                                                        </button>
+                                                        </Link>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -423,5 +468,6 @@ export default function Orders() {
                 </div>
             </footer>
         </div>
+        </AuthGuard>
     );
 }

@@ -1,21 +1,135 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useParams } from 'next/navigation';
 import React from 'react';
 import Button from '../../../../../_components/Admin/Button';
-import { 
-  MdArrowBack, 
-  MdCheck, 
-  MdEdit, 
-  MdLocalShipping, 
-  MdCreditCard 
+import {
+  MdArrowBack,
+  MdCheck,
+  MdEdit,
+  MdLocalShipping,
+  MdCreditCard,
+  MdError,
+  MdSchedule,
 } from 'react-icons/md';
 
+const getStatusBadge = (status) => {
+  const styles = {
+    Paid: 'bg-primary-container/20 text-primary-container',
+    'Partially Paid': 'bg-surface-container-high text-on-surface-variant',
+    Pending: 'bg-tertiary-container/20 text-tertiary',
+    Refunded: 'bg-error-container/20 text-error',
+    Unfulfilled: 'bg-tertiary-container/20 text-tertiary',
+    Fulfilled: 'bg-primary-container/20 text-primary-container',
+    Returned: 'bg-error-container/20 text-error',
+  };
+  return styles[status] || 'bg-surface-container-high text-on-surface-variant';
+};
+
+const formatCurrency = (value) =>
+  `Rs ${Number(value || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+};
+
+const formatTime = (dateStr) => {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+};
+
 const OrderDetailPage = () => {
+  const params = useParams();
+  const id = params?.id;
+
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!id) return;
+    let active = true;
+    setLoading(true);
+    setError('');
+
+    const load = async () => {
+      try {
+        const res = await fetch(`/api/orders/${id}`, { cache: 'no-store' });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.message || data.error || 'Failed to load order.');
+        }
+        if (active) setOrder(data.order);
+      } catch (err) {
+        if (active) setError(err.message);
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      active = false;
+    };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <main className="pt-4 px-margin-desktop pb-20">
+        <div className="max-w-[1400px] mx-auto flex items-center justify-center py-40">
+          <span className="text-on-surface-variant font-body-md">Loading order…</span>
+        </div>
+      </main>
+    );
+  }
+
+  if (error || !order) {
+    return (
+      <main className="pt-4 px-margin-desktop pb-20">
+        <div className="max-w-[1400px] mx-auto">
+          <Link
+            className="text-primary hover:underline flex items-center gap-1 font-body-sm text-body-sm mb-6"
+            href="/admin/orders"
+          >
+            <MdArrowBack size={16} />
+            Back to Orders
+          </Link>
+          <div className="bg-error-container/20 border border-error/30 text-error p-6 rounded">
+            <p className="font-bold mb-1">Order not found</p>
+            <p className="text-body-sm">{error || 'This order does not exist.'}</p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  const lineItems = order.lineItems || [];
+  const customer = order.customer || {};
+  const isPaid = order.paymentStatus === 'Paid' || order.paymentStatus === 'Partially Paid';
+  const isFulfilled = order.fulfillmentStatus === 'Fulfilled';
+  const customerInitials = (customer.name || order.email || '?')
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
+  const shippingLines = [
+    customer.name,
+    order.address,
+    order.apartment,
+    [order.city, order.postalCode].filter(Boolean).join(', '),
+    order.country,
+  ].filter(Boolean);
+
   return (
     <>
-
       {/* Main Content Canvas */}
       <main className="pt-4 px-margin-desktop pb-20">
         <div className="max-w-[1400px] mx-auto">
@@ -32,13 +146,14 @@ const OrderDetailPage = () => {
                 </Link>
               </div>
               <div className="flex items-center gap-4">
-                <h2 className="font-headline-lg text-headline-lg font-black">Order #1042-88</h2>
-                <span className="px-2 py-1 bg-surface-container-high text-on-surface-variant font-label-md text-label-md rounded">
-                  Partially Paid
+                <h2 className="font-headline-lg text-headline-lg font-black">Order {order.orderId}</h2>
+                <span className={`px-2 py-1 ${getStatusBadge(order.paymentStatus)} font-label-md text-label-md rounded`}>
+                  {order.paymentStatus || 'Pending'}
                 </span>
               </div>
               <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">
-                October 24, 2023 at 2:14 PM from Online Store
+                {formatDate(order.date || order.createdAt)} at {formatTime(order.date || order.createdAt)} from{' '}
+                {order.channel || 'Online Store'}
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -65,55 +180,40 @@ const OrderDetailPage = () => {
                     <thead>
                       <tr className="bg-surface-container-low/50">
                         <th className="p-4 font-label-md text-label-md text-on-surface-variant">Product</th>
-                        <th className="p-4 font-label-md text-label-md text-on-surface-variant">SKU</th>
                         <th className="p-4 font-label-md text-label-md text-on-surface-variant">Price</th>
                         <th className="p-4 font-label-md text-label-md text-on-surface-variant">Quantity</th>
                         <th className="p-4 text-right font-label-md text-label-md text-on-surface-variant">Total</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-outline-variant">
-                      <tr className="hover:bg-surface-container-low transition-colors">
-                        <td className="p-4">
-                          <div className="flex items-center gap-4">
-                            <Image
-                              className="rounded object-cover border border-outline-variant"
-                              alt="Aero-Step Performance Sneakers product photo"
-                              src="https://lh3.googleusercontent.com/aida-public/AB6AXuCbpa_CJKyAYvnYymYaw_650kURVN7bICDOKUeiHQtC5Dm7HsfUxT-nbTjIsckPerBomEEt1dR2oxYb-RwEZP61y8xJX3srY0uWihBKMx5fPgRMlJ7INefF6PqUGaqNAnErPghIQSjfKpq_hBk73Qp1obcX5e16SrlJCd6IU75YnVIx0awuxuQ15waxLrm6C3n89Xf14my6yOtiFmsAiizIL0PFRjQoDK4lTxwaapTlekiS4GjOOiC8fPdzMR3fgSv3RKZniRGhVX05"
-                              width={48}
-                              height={48}
-                            />
+                      {lineItems.length === 0 && (
+                        <tr>
+                          <td className="p-4 text-on-surface-variant" colSpan={4}>
+                            No items recorded for this order.
+                          </td>
+                        </tr>
+                      )}
+                      {lineItems.map((item, idx) => (
+                        <tr key={idx} className="hover:bg-surface-container-low transition-colors">
+                          <td className="p-4">
                             <div>
-                              <p className="font-bold">Aero-Step Performance Sneakers</p>
-                              <p className="text-body-sm text-on-surface-variant">Size: 42, Color: Crimson Red</p>
+                              <p className="font-bold">{item.title}</p>
+                              {(item.size || item.color) && (
+                                <p className="text-body-sm text-on-surface-variant">
+                                  {[item.size && `Size: ${item.size}`, item.color && `Color: ${item.color}`]
+                                    .filter(Boolean)
+                                    .join(', ')}
+                                </p>
+                              )}
                             </div>
-                          </div>
-                        </td>
-                        <td className="p-4 text-on-surface-variant">SHOE-ASP-42-RED</td>
-                        <td className="p-4">Rs 129.00</td>
-                        <td className="p-4">1</td>
-                        <td className="p-4 text-right font-bold">Rs 129.00</td>
-                      </tr>
-                      <tr className="hover:bg-surface-container-low transition-colors">
-                        <td className="p-4">
-                          <div className="flex items-center gap-4">
-                            <Image
-                              className="rounded object-cover border border-outline-variant"
-                              alt="Nomad Classic Wristwatch product photo"
-                              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDh9Nb6oXsKxzyyI2Dprc7RJO1IPngcAOMOafaCEVCla46yI64U73DuwIR72C3ZpycXocKZUVd831G7Zyo3yXewj7AmsaBxhkrcVi4OVSA4YCj3lUh0lAzrfUEsVFOPHh3nLrQbT6sDfLp0W-96lrdiyMb5DkTsHfyUEv_ejdoiQAnA8WkcBUt7EdU7JqdJGkNe-9nqTM9asAiyESYjIitaYqcaR59ycVrGXiGXR-P0YmFF-BshWY1WKdhn8Zaun35S5v9VvFTYuByV"
-                              width={48}
-                              height={48}
-                            />
-                            <div>
-                              <p className="font-bold">Nomad Classic Wristwatch</p>
-                              <p className="text-body-sm text-on-surface-variant">Strap: Tan Leather</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="p-4 text-on-surface-variant">WTCH-NMD-TAN</td>
-                        <td className="p-4">Rs 85.00</td>
-                        <td className="p-4">2</td>
-                        <td className="p-4 text-right font-bold">Rs 170.00</td>
-                      </tr>
+                          </td>
+                          <td className="p-4">{formatCurrency(item.price)}</td>
+                          <td className="p-4">{item.quantity}</td>
+                          <td className="p-4 text-right font-bold">
+                            {formatCurrency(Number(item.price || 0) * Number(item.quantity || 0))}
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
@@ -125,46 +225,74 @@ const OrderDetailPage = () => {
                 <div className="relative">
                   <div className="absolute left-[11px] top-0 bottom-0 w-[2px] bg-outline-variant"></div>
                   <div className="space-y-8">
-                    {/* Step 1 */}
+                    {/* Step 1 — placed */}
                     <div className="relative flex items-start pl-8">
+                      <div className="absolute left-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center z-10">
                         <MdCheck size={14} className="text-on-primary" />
+                      </div>
                       <div className="flex-1">
                         <div className="flex justify-between items-start">
                           <p className="font-bold">Order placed</p>
-                          <p className="text-body-sm text-on-surface-variant">Oct 24, 2:14 PM</p>
+                          <p className="text-body-sm text-on-surface-variant">
+                            {formatDate(order.date || order.createdAt)} {formatTime(order.date || order.createdAt)}
+                          </p>
                         </div>
                         <p className="text-body-sm text-on-surface-variant">
-                          Customer placed an order via the Online Store.
+                          Customer placed an order via the {order.channel || 'Online Store'}.
                         </p>
                       </div>
                     </div>
 
-                    {/* Step 2 */}
+                    {/* Step 2 — payment */}
                     <div className="relative flex items-start pl-8">
-                        <MdCheck size={14} className="text-on-primary" />
+                      {isPaid ? (
+                        <div className="absolute left-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center z-10">
+                          <MdCheck size={14} className="text-on-primary" />
+                        </div>
+                      ) : (
+                        <div className="absolute left-0 w-6 h-6 rounded-full border-2 border-primary bg-surface-container-lowest flex items-center justify-center z-10">
+                          <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+                        </div>
+                      )}
                       <div className="flex-1">
                         <div className="flex justify-between items-start">
-                          <p className="font-bold">Payment processed</p>
-                          <p className="text-body-sm text-on-surface-variant">Oct 24, 2:15 PM</p>
+                          <p className="font-bold">Payment {isPaid ? 'processed' : 'pending'}</p>
+                          <p className="text-body-sm text-on-surface-variant">
+                            {isPaid ? order.paymentStatus : 'Awaiting payment'}
+                          </p>
                         </div>
                         <p className="text-body-sm text-on-surface-variant">
-                          Transaction approved by Stripe. Total Rs 299.00.
+                          {isPaid
+                            ? `Transaction approved. Total ${formatCurrency(order.total)}.`
+                            : `Payment method: ${order.paymentMethod || '—'}.`}
                         </p>
                       </div>
                     </div>
 
-                    {/* Step 3 (Active/Current) */}
+                    {/* Step 3 — fulfillment */}
                     <div className="relative flex items-start pl-8">
-                      <div className="absolute left-0 w-6 h-6 rounded-full border-2 border-primary bg-surface-container-lowest flex items-center justify-center z-10">
-                        <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
-                      </div>
+                      {isFulfilled ? (
+                        <div className="absolute left-0 w-6 h-6 rounded-full bg-primary flex items-center justify-center z-10">
+                          <MdCheck size={14} className="text-on-primary" />
+                        </div>
+                      ) : (
+                        <div className="absolute left-0 w-6 h-6 rounded-full border-2 border-primary bg-surface-container-lowest flex items-center justify-center z-10">
+                          <div className="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+                        </div>
+                      )}
                       <div className="flex-1">
                         <div className="flex justify-between items-start">
-                          <p className="font-bold text-primary">Pending fulfillment</p>
-                          <p className="text-body-sm text-on-surface-variant">Current</p>
+                          <p className="font-bold text-primary">
+                            {isFulfilled ? 'Fulfilled' : 'Pending fulfillment'}
+                          </p>
+                          <p className="text-body-sm text-on-surface-variant">
+                            {isFulfilled ? 'Complete' : 'Current'}
+                          </p>
                         </div>
                         <p className="text-body-sm text-on-surface-variant">
-                          The order is ready to be picked and packed.
+                          {isFulfilled
+                            ? 'The order has been packed and shipped.'
+                            : 'The order is ready to be picked and packed.'}
                         </p>
                       </div>
                     </div>
@@ -178,6 +306,7 @@ const OrderDetailPage = () => {
                 <textarea
                   className="w-full h-32 p-3 border border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary rounded font-body-md text-body-md"
                   placeholder="Add a note to this order..."
+                  defaultValue={order.note || ''}
                 ></textarea>
                 <div className="flex justify-end mt-4">
                   <button className="px-4 py-2 bg-primary text-on-primary font-label-md text-label-md hover:opacity-90 transition-opacity rounded active:scale-[0.98]">
@@ -193,7 +322,8 @@ const OrderDetailPage = () => {
               <div className="bg-surface-container-lowest border border-outline-variant shadow-sm rounded p-lg">
                 <h3 className="font-headline-md text-headline-md mb-4">Fulfillment</h3>
                 <p className="text-body-sm text-on-surface-variant mb-6">
-                  2 of 2 items are unfulfilled. Prepare the items for shipping.
+                  {lineItems.reduce((acc, i) => acc + (Number(i.quantity) || 0), 0)} item(s) ·{' '}
+                  {order.fulfillmentStatus || 'Unfulfilled'}.
                 </p>
                 <div className="space-y-3">
                   <button className="w-full py-3 bg-primary text-on-primary font-bold text-body-md hover:opacity-90 transition-opacity rounded shadow-sm active:scale-[0.98]">
@@ -215,21 +345,23 @@ const OrderDetailPage = () => {
                 </div>
                 <div className="flex items-center gap-4 mb-4">
                   <div className="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center font-bold text-secondary">
-                    JH
+                    {customer.avatar || customerInitials}
                   </div>
                   <div>
-                    <p className="font-bold">Jonathan Higgins</p>
-                    <p className="text-body-sm text-on-surface-variant">8 orders</p>
+                    <p className="font-bold">{customer.name || '—'}</p>
+                    <p className="text-body-sm text-on-surface-variant">
+                      {order.items} item(s) · {formatCurrency(order.total)}
+                    </p>
                   </div>
                 </div>
                 <div className="space-y-4 pt-4 border-t border-outline-variant">
                   <div>
                     <p className="font-label-md text-label-md text-on-surface-variant mb-1">Email</p>
-                    <p className="font-body-md text-body-md text-primary">j.higgins@example.com</p>
+                    <p className="font-body-md text-body-md text-primary">{order.email || customer.email || '—'}</p>
                   </div>
                   <div>
                     <p className="font-label-md text-label-md text-on-surface-variant mb-1">Phone</p>
-                    <p className="font-body-md text-body-md">+1 (555) 0123-4567</p>
+                    <p className="font-body-md text-body-md">{order.phone || '—'}</p>
                   </div>
                 </div>
               </div>
@@ -241,16 +373,18 @@ const OrderDetailPage = () => {
                   <MdEdit className="text-on-surface-variant cursor-pointer" size={18} />
                 </div>
                 <div className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
-                  <p>Jonathan Higgins</p>
-                  <p>1248 Oakwood Avenue</p>
-                  <p>Apartment 4B</p>
-                  <p>Seattle, WA 98101</p>
-                  <p>United States</p>
+                  {shippingLines.length > 0 ? (
+                    shippingLines.map((line, idx) => <p key={idx}>{line}</p>)
+                  ) : (
+                    <p>—</p>
+                  )}
                 </div>
                 <div className="mt-4 pt-4 border-t border-outline-variant">
                   <div className="flex items-center gap-2 text-on-surface-variant">
                     <MdLocalShipping size={18} />
-                    <p className="font-body-sm text-body-sm">Standard Shipping (3-5 business days)</p>
+                    <p className="font-body-sm text-body-sm">
+                      {order.shippingMethod || 'Standard Shipping'} · {order.fulfillmentStatus || 'Unfulfilled'}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -261,26 +395,30 @@ const OrderDetailPage = () => {
                 <div className="space-y-3 font-body-md text-body-md">
                   <div className="flex justify-between">
                     <span className="text-on-surface-variant">Subtotal</span>
-                    <span>Rs 299.00</span>
+                    <span>{formatCurrency(order.total)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-on-surface-variant">Shipping</span>
-                    <span>Rs 0.00</span>
+                    <span>{formatCurrency(order.shipping || 0)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-on-surface-variant">Tax</span>
-                    <span>Rs 0.00</span>
+                    <span>{formatCurrency(order.tax || 0)}</span>
                   </div>
                   <div className="flex justify-between pt-3 border-t border-outline-variant font-bold">
                     <span>Total</span>
-                    <span>Rs 299.00</span>
+                    <span>{formatCurrency(order.total)}</span>
                   </div>
                 </div>
                 <div className="mt-6 flex items-center gap-3 p-3 bg-surface-container-low rounded">
                   <MdCreditCard className="text-primary" size={20} />
                   <div>
-                    <p className="font-label-md text-label-md">Paid via Mastercard</p>
-                    <p className="text-body-sm text-on-surface-variant">ending in 4422</p>
+                    <p className="font-label-md text-label-md capitalize">
+                      {order.paymentMethod === 'bank' ? 'Bank Deposit' : 'Cash on Delivery'}
+                    </p>
+                    <p className="text-body-sm text-on-surface-variant">
+                      {order.paymentStatus || 'Pending'}
+                    </p>
                   </div>
                 </div>
               </div>

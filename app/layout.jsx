@@ -1,6 +1,7 @@
 import './globals.css';
 import { EB_Garamond, Manrope, Jost } from 'next/font/google';
 import { CartProvider } from './store/cartContext';
+import { AuthProvider } from './store/authContext';
 import { NavMenuProvider } from './store/navMenuContext';
 import { getHeaderMenuItems } from '@/lib/getHeaderMenu';
 import { getSiteSettings } from '..//lib/getSiteSettings';
@@ -61,11 +62,13 @@ export default async function RootLayout({ children }) {
             </head>
             <body className="bg-surface text-on-surface selection:bg-secondary-container selection:text-on-secondary-container">
                 <SiteSettingsProvider  settings={settings}>
-                    <CartProvider>
-                        <NavMenuProvider items={headerNavItems}>
-                            {children}
-                        </NavMenuProvider>
-                    </CartProvider>
+                    <AuthProvider>
+                        <CartProvider>
+                            <NavMenuProvider items={headerNavItems}>
+                                {children}
+                            </NavMenuProvider>
+                        </CartProvider>
+                    </AuthProvider>
                 </SiteSettingsProvider>
             </body>
         </html>

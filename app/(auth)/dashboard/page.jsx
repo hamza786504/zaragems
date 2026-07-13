@@ -4,35 +4,29 @@ import { useState, useEffect, useRef } from 'react';
 import Navbar from '../../_components/Navbar';
 import Sidebar from '../../_components/Dashboard/Sidebar';
 import Link from 'next/link';
+import { useAuth } from '../../store/authContext';
+import { AuthGuard } from '../../_components/AuthGuard';
 
-// Sample user data
-const userData = {
-    name: 'Nazish',
-    fullName: 'Nazish Ahmed',
-    email: 'nazish@example.com',
-};
-
-// Sample orders data
-const recentOrders = [
+// Sample fallback data
+const fallbackOrders = [
     {
         id: '#LX-90234',
         date: 'October 12, 2023',
         status: 'Processing',
-        total: '$1,240.00',
+        total: 'Rs. 124,000',
         statusColor: 'bg-primary-fixed text-on-primary-fixed-variant',
     },
     {
         id: '#LX-88120',
         date: 'September 24, 2023',
         status: 'Delivered',
-        total: '$850.00',
+        total: 'Rs. 85,000',
         statusColor: 'bg-surface-container-highest text-on-surface',
     },
 ];
 
-// Sample address data
-const defaultAddress = {
-    name: 'Nazish Ahmed',
+const fallbackAddress = {
+    name: 'Customer Name',
     street: '124 Silk Road Court',
     district: 'Artisans District, Lahore',
     province: 'Punjab, 54000',
@@ -40,7 +34,6 @@ const defaultAddress = {
     phone: '+92 300 1234567',
 };
 
-// Navigation items
 const navItems = [
     { id: 'dashboard', icon: 'grid_view', label: 'Dashboard', active: true },
     { id: 'profile', icon: 'person', label: 'Profile', active: true },
@@ -50,9 +43,62 @@ const navItems = [
 ];
 
 export default function MyAccountPage() {
+    const { customer, loading, isAuthenticated, refresh } = useAuth();
     const [isNavScrolled, setIsNavScrolled] = useState(false);
     const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+    const [recentOrders, setRecentOrders] = useState(fallbackOrders);
+    const [defaultAddress, setDefaultAddress] = useState(fallbackAddress);
+    const [ordersError, setOrdersError] = useState(null);
+    const [addressError, setAddressError] = useState(null);
     const navRef = useRef(null);
+
+    // Fetch orders when authenticated
+    useEffect(() => {
+        if (isAuthenticated && customer) {
+            fetch('/api/account/orders')
+                .then((res) => res.json())
+                .then((data) => {
+                    if (data.success && data.orders) {
+                        setRecentOrders(data.orders.slice(0, 5).map((order) => ({
+                            id: order.orderId,
+                            date: new Date(order.date).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                            }),
+                            status: order.status || order.fulfillmentStatus || 'Processing',
+                            total: `Rs. ${Number(order.total).toLocaleString()}`,
+                            statusColor: order.status === 'Delivered'
+                                ? 'bg-surface-container-highest text-on-surface'
+                                : 'bg-primary-fixed text-on-primary-fixed-variant',
+                        })));
+                    }
+                })
+                .catch(() => setOrdersError('Failed to load orders'));
+        }
+    }, [isAuthenticated, customer]);
+
+    // Fetch addresses when authenticated
+    useEffect(() => {
+        if (isAuthenticated && customer) {
+            fetch('/api/account/addresses')
+                .then((res) => res.json())
+                .then((data) => {
+                    if (data.success && data.addresses && data.addresses.length > 0) {
+                        const defaultAddr = data.addresses.find((a) => a.isDefault) || data.addresses[0];
+                        setDefaultAddress({
+                            name: `${defaultAddr.firstName} ${defaultAddr.lastName}`,
+                            street: defaultAddr.street,
+                            district: defaultAddr.city,
+                            province: `${defaultAddr.postalCode || ''} ${defaultAddr.country || ''}`.trim(),
+                            country: defaultAddr.country || 'Pakistan',
+                            phone: defaultAddr.phone,
+                        });
+                    }
+                })
+                .catch(() => setAddressError('Failed to load addresses'));
+        }
+    }, [isAuthenticated, customer]);
 
     // Handle scroll effect for navbar
     useEffect(() => {
@@ -101,6 +147,7 @@ export default function MyAccountPage() {
     };
 
     return (
+        <AuthGuard>
         <div className="min-h-screen flex flex-col">
             {/* Global Styles */}
             <style jsx global>{`
@@ -181,7 +228,11 @@ export default function MyAccountPage() {
                 </div>
                 <div className="overflow-y-auto h-full pb-20">
                     <Sidebar
-                        userData={userData}
+                        userData={{
+                            name: customer?.name || 'Guest',
+                            fullName: customer?.name || 'Guest User',
+                            email: customer?.email || 'guest@example.com',
+                        }}
                         navItems={navItems}
                         isMobile={true}
                     />
@@ -194,7 +245,11 @@ export default function MyAccountPage() {
                     {/* Desktop Sidebar */}
                     <div className="hidden md:block md:col-span-3">
                         <Sidebar
-                            userData={userData}
+                            userData={{
+                                name: customer?.name || 'Guest',
+                                fullName: customer?.name || 'Guest User',
+                                email: customer?.email || 'guest@example.com',
+                            }}
                             navItems={navItems}
                             isMobile={false}
                         />
@@ -215,61 +270,109 @@ export default function MyAccountPage() {
                                     View All Orders
                                 </Link>
                             </div>
-                            <div className="overflow-hidden border premium-border bg-white">
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left border-collapse min-w-[600px]">
-                                        <thead>
-                                            <tr className="bg-surface-container-low border-b premium-border">
-                                                <th className="p-4 font-label-md text-label-md text-primary uppercase tracking-tighter">
-                                                    Order #
-                                                </th>
-                                                <th className="p-4 font-label-md text-label-md text-primary uppercase tracking-tighter">
-                                                    Date
-                                                </th>
-                                                <th className="p-4 font-label-md text-label-md text-primary uppercase tracking-tighter">
-                                                    Status
-                                                </th>
-                                                <th className="p-4 font-label-md text-label-md text-primary uppercase tracking-tighter">
-                                                    Total
-                                                </th>
-                                                <th className="p-4 font-label-md text-label-md text-primary uppercase tracking-tighter text-right">
-                                                    Action
-                                                </th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="font-body-md text-body-md divide-y premium-border">
-                                            {recentOrders.map((order) => (
-                                                <tr
-                                                    key={order.id}
-                                                    className="hover:bg-surface-container-lowest transition-colors"
-                                                >
-                                                    <td className="p-4 text-primary font-medium">
-                                                        {order.id}
-                                                    </td>
-                                                    <td className="p-4 text-on-surface-variant">
-                                                        {order.date}
-                                                    </td>
-                                                    <td className="p-4">
-                                                        <span
-                                                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-label-sm ${order.statusColor}`}
-                                                        >
-                                                            {order.status}
-                                                        </span>
-                                                    </td>
-                                                    <td className="p-4 text-primary font-display-lg text-body-lg">
-                                                        {order.total}
-                                                    </td>
-                                                    <td className="p-4 text-right">
-                                                        <button className="font-label-sm text-label-sm text-secondary hover:text-primary font-bold">
-                                                            View Details
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                            {loading ? (
+                                <div className="flex items-center justify-center py-12">
+                                    <span className="material-symbols-outlined animate-spin text-secondary text-4xl">
+                                        progress_activity
+                                    </span>
                                 </div>
-                            </div>
+                            ) : !isAuthenticated ? (
+                                <div className="bg-surface-container-low border premium-border p-8 text-center">
+                                    <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-4 block">
+                                        account_circle
+                                    </span>
+                                    <h3 className="font-headline-sm text-headline-sm text-primary mb-2">
+                                        Please sign in to view your orders
+                                    </h3>
+                                    <p className="text-on-surface-variant mb-6">
+                                        Your order history will appear here once you're logged in.
+                                    </p>
+                                    <Link
+                                        href="/login"
+                                        className="inline-flex items-center justify-center gap-2 bg-primary text-on-primary px-6 py-3 font-label-md text-label-md uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all border border-secondary/20"
+                                    >
+                                        Sign In
+                                    </Link>
+                                </div>
+                            ) : ordersError ? (
+                                <div className="bg-error-container/20 border border-error/30 p-4 text-error text-center">
+                                    {ordersError}
+                                </div>
+                            ) : recentOrders.length === 0 ? (
+                                <div className="bg-surface-container-low border premium-border p-8 text-center">
+                                    <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-4 block">
+                                        shopping_bag
+                                    </span>
+                                    <h3 className="font-headline-sm text-headline-sm text-primary mb-2">
+                                        No orders yet
+                                    </h3>
+                                    <p className="text-on-surface-variant mb-6">
+                                        Your order history will appear here once you place an order.
+                                    </p>
+                                    <Link
+                                        href="/"
+                                        className="inline-flex items-center justify-center gap-2 bg-primary text-on-primary px-6 py-3 font-label-md text-label-md uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all border border-secondary/20"
+                                    >
+                                        Start Shopping
+                                    </Link>
+                                </div>
+                            ) : (
+                                <div className="overflow-hidden border premium-border bg-white">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left border-collapse min-w-[600px]">
+                                            <thead>
+                                                <tr className="bg-surface-container-low border-b premium-border">
+                                                    <th className="p-4 font-label-md text-label-md text-primary uppercase tracking-tighter">
+                                                        Order #
+                                                    </th>
+                                                    <th className="p-4 font-label-md text-label-md text-primary uppercase tracking-tighter">
+                                                        Date
+                                                    </th>
+                                                    <th className="p-4 font-label-md text-label-md text-primary uppercase tracking-tighter">
+                                                        Status
+                                                    </th>
+                                                    <th className="p-4 font-label-md text-label-md text-primary uppercase tracking-tighter">
+                                                        Total
+                                                    </th>
+                                                    <th className="p-4 font-label-md text-label-md text-primary uppercase tracking-tighter text-right">
+                                                        Action
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="font-body-md text-body-md divide-y premium-border">
+                                                {recentOrders.map((order) => (
+                                                    <tr
+                                                        key={order.id}
+                                                        className="hover:bg-surface-container-lowest transition-colors"
+                                                    >
+                                                        <td className="p-4 text-primary font-medium">
+                                                            {order.id}
+                                                        </td>
+                                                        <td className="p-4 text-on-surface-variant">
+                                                            {order.date}
+                                                        </td>
+                                                        <td className="p-4">
+                                                            <span
+                                                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-label-sm ${order.statusColor}`}
+                                                            >
+                                                                {order.status}
+                                                            </span>
+                                                        </td>
+                                                        <td className="p-4 text-primary font-display-lg text-body-lg">
+                                                            {order.total}
+                                                        </td>
+                                                        <td className="p-4 text-right">
+                                                            <button className="font-label-sm text-label-sm text-secondary hover:text-primary font-bold">
+                                                                View Details
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
                         </section>
 
                         {/* Profile Overview / Address Grid */}
@@ -284,19 +387,42 @@ export default function MyAccountPage() {
                                         location_on
                                     </span>
                                 </div>
-                                <div className="flex-grow font-body-md text-body-md text-on-surface-variant leading-relaxed">
-                                    <p className="font-bold text-primary mb-1">
-                                        {defaultAddress.name}
-                                    </p>
-                                    <p>{defaultAddress.street}</p>
-                                    <p>{defaultAddress.district}</p>
-                                    <p>{defaultAddress.province}</p>
-                                    <p>{defaultAddress.country}</p>
-                                    <p className="mt-4 text-label-sm">{defaultAddress.phone}</p>
-                                </div>
-                                <button className="mt-stack-sm w-full py-3 border border-secondary text-secondary font-label-md uppercase tracking-widest hover:bg-secondary hover:text-white transition-all duration-300">
-                                    Edit Address
-                                </button>
+                                {!isAuthenticated ? (
+                                    <div className="flex-grow flex flex-col items-center justify-center text-center">
+                                        <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-4">
+                                            location_off
+                                        </span>
+                                        <p className="text-on-surface-variant mb-4">
+                                            Sign in to view your saved addresses
+                                        </p>
+                                        <Link
+                                            href="/login"
+                                            className="inline-flex items-center justify-center gap-2 bg-primary text-on-primary px-6 py-3 font-label-md text-label-md uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all border border-secondary/20"
+                                        >
+                                            Sign In
+                                        </Link>
+                                    </div>
+                                ) : addressError ? (
+                                    <div className="bg-error-container/20 border border-error/30 p-4 text-error text-center">
+                                        {addressError}
+                                    </div>
+                                ) : (
+                                    <div className="flex-grow font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                                        <p className="font-bold text-primary mb-1">
+                                            {defaultAddress.name}
+                                        </p>
+                                        <p>{defaultAddress.street}</p>
+                                        <p>{defaultAddress.district}</p>
+                                        <p>{defaultAddress.province}</p>
+                                        <p>{defaultAddress.country}</p>
+                                        <p className="mt-4 text-label-sm">{defaultAddress.phone}</p>
+                                    </div>
+                                )}
+                                {!isAuthenticated ? null : (
+                                    <button className="mt-stack-sm w-full py-3 border border-secondary text-secondary font-label-md uppercase tracking-widest hover:bg-secondary hover:text-white transition-all duration-300">
+                                        Edit Address
+                                    </button>
+                                )}
                             </div>
 
                             {/* Account Summary Card */}
@@ -309,35 +435,63 @@ export default function MyAccountPage() {
                                         account_circle
                                     </span>
                                 </div>
-                                <div className="flex-grow font-body-md text-body-md text-on-surface-variant leading-relaxed space-y-3">
-                                    <div>
-                                        <p className="text-label-sm text-on-surface-variant uppercase tracking-wider">
-                                            Name
+                                {!isAuthenticated ? (
+                                    <div className="flex-grow flex flex-col items-center justify-center text-center">
+                                        <span className="material-symbols-outlined text-4xl text-on-surface-variant mb-4">
+                                            account_circle
+                                        </span>
+                                        <p className="text-on-surface-variant mb-4">
+                                            Sign in to view your account details
                                         </p>
-                                        <p className="font-medium text-primary">{userData.fullName}</p>
+                                        <Link
+                                            href="/login"
+                                            className="inline-flex items-center justify-center gap-2 bg-primary text-on-primary px-6 py-3 font-label-md text-label-md uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all border border-secondary/20"
+                                        >
+                                            Sign In
+                                        </Link>
                                     </div>
-                                    <div>
-                                        <p className="text-label-sm text-on-surface-variant uppercase tracking-wider">
-                                            Email
-                                        </p>
-                                        <p className="font-medium text-primary">{userData.email}</p>
+                                ) : (
+                                    <div className="flex-grow font-body-md text-body-md text-on-surface-variant leading-relaxed space-y-3">
+                                        <div>
+                                            <p className="text-label-sm text-on-surface-variant uppercase tracking-wider">
+                                                Name
+                                            </p>
+                                            <p className="font-medium text-primary">{customer?.name || 'Guest User'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-label-sm text-on-surface-variant uppercase tracking-wider">
+                                                Email
+                                            </p>
+                                            <p className="font-medium text-primary">{customer?.email || 'guest@example.com'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-label-sm text-on-surface-variant uppercase tracking-wider">
+                                                Member Since
+                                            </p>
+                                            <p className="font-medium text-primary">
+                                                {customer?.createdAt
+                                                    ? new Date(customer.createdAt).toLocaleDateString('en-US', {
+                                                          year: 'numeric',
+                                                          month: 'long',
+                                                      })
+                                                    : 'January 2023'}
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <p className="text-label-sm text-on-surface-variant uppercase tracking-wider">
+                                                Total Orders
+                                            </p>
+                                            <p className="font-medium text-primary">
+                                                {customer?.ordersCount || recentOrders.length}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="text-label-sm text-on-surface-variant uppercase tracking-wider">
-                                            Member Since
-                                        </p>
-                                        <p className="font-medium text-primary">January 2023</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-label-sm text-on-surface-variant uppercase tracking-wider">
-                                            Total Orders
-                                        </p>
-                                        <p className="font-medium text-primary">12</p>
-                                    </div>
-                                </div>
-                                <button className="mt-stack-sm w-full py-3 border border-secondary text-secondary font-label-md uppercase tracking-widest hover:bg-secondary hover:text-white transition-all duration-300">
-                                    Edit Profile
-                                </button>
+                                )}
+                                {!isAuthenticated ? null : (
+                                    <button className="mt-stack-sm w-full py-3 border border-secondary text-secondary font-label-md uppercase tracking-widest hover:bg-secondary hover:text-white transition-all duration-300">
+                                        Edit Profile
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -366,7 +520,7 @@ export default function MyAccountPage() {
                             href="/shipping"
                             className="font-label-sm text-label-sm text-on-surface-variant hover:text-primary underline transition-all"
                         >
-                            Shipping &amp; Returns
+                            Shipping & Returns
                         </Link>
                         <Link
                             href="/privacy"
@@ -374,7 +528,7 @@ export default function MyAccountPage() {
                         >
                             Privacy Policy
                         </Link>
-                        <Link  
+                        <Link
                             href="/contact"
                             className="font-label-sm text-label-sm text-on-surface-variant hover:text-primary underline transition-all"
                         >
@@ -390,5 +544,6 @@ export default function MyAccountPage() {
                 </div>
             </footer>
         </div>
+        </AuthGuard>
     );
 }

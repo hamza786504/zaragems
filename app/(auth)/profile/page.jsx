@@ -6,42 +6,48 @@ import Sidebar from '../../_components/Dashboard/Sidebar';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useAuth } from '../../store/authContext';
+import { AuthGuard } from '../../_components/AuthGuard';
 
-// Sample user data
-const userData = {
-    name: 'Nazish',
-    fullName: 'Nazish Ahmed',
-    email: 'nazish@example.com',
-};
-
-// Initial profile data
-const initialProfileData = {
-    firstName: 'Amara',
-    lastName: 'Khan',
-    email: 'amara.khan@example.com',
-    phone: '+92 300 1234567',
-    currentPassword: '',
-    newPassword: '',
-};
-
-// Navigation items
 const navItems = [
-    { id: 'dashboard', icon: 'grid_view', label: 'Dashboard' },
-    { id: 'orders', icon: 'package_2', label: 'Orders' },
-    { id: 'profile', icon: 'person', label: 'Profile' },
-    { id: 'address', icon: 'menu_book', label: 'Address Book' },
-    { id: 'account', icon: 'manage_accounts', label: 'Account Details' },
+    { id: 'dashboard', icon: 'grid_view', label: 'Dashboard', active: true },
+    { id: 'profile', icon: 'person', label: 'Profile', active: true },
+    { id: 'orders', icon: 'package_2', label: 'Orders', active: false },
+    { id: 'address', icon: 'menu_book', label: 'Address Book', active: false },
+    { id: 'account', icon: 'manage_accounts', label: 'Account Details', active: false },
 ];
 
 export default function AccountDetailsPage() {
+    const { customer, loading, isAuthenticated, refresh } = useAuth();
     const router = useRouter();
     const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [submitStatus, setSubmitStatus] = useState(null); // null, 'success', 'error'
+    const [submitStatus, setSubmitStatus] = useState(null);
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
-    
-    const [formData, setFormData] = useState(initialProfileData);
+    const [formData, setFormData] = useState({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        currentPassword: '',
+        newPassword: '',
+    });
+
+    // Load user data when authenticated
+    useEffect(() => {
+        if (isAuthenticated && customer) {
+            setFormData(prev => ({
+                ...prev,
+                firstName: customer.firstName || '',
+                lastName: customer.lastName || '',
+                email: customer.email || '',
+                phone: customer.phone || '',
+            }));
+        }
+    }, [isAuthenticated, customer]);
+
+    // ... rest of the component
 
     // Handle input changes
     const handleInputChange = (e) => {
@@ -59,22 +65,32 @@ export default function AccountDetailsPage() {
         setSubmitStatus(null);
 
         try {
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // Success
+            // Call the profile update API
+            const res = await fetch('/api/account/profile', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...formData,
+                    customerId: customer?._id // Add customer ID if needed
+                }),
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || 'Update failed');
+            }
+
             setIsSubmitting(false);
             setSubmitStatus('success');
-            
+
             // Reset success message after 2 seconds
             setTimeout(() => {
                 setSubmitStatus(null);
             }, 2000);
-            
         } catch (error) {
             setIsSubmitting(false);
             setSubmitStatus('error');
-            
+
             // Reset error message after 3 seconds
             setTimeout(() => {
                 setSubmitStatus(null);
@@ -127,6 +143,7 @@ export default function AccountDetailsPage() {
     };
 
     return (
+        <AuthGuard>
         <div className="min-h-screen flex flex-col">
             {/* Global Styles */}
             <style jsx global>{`
@@ -200,7 +217,11 @@ export default function AccountDetailsPage() {
                 </div>
                 <div className="overflow-y-auto h-full pb-20">
                     <Sidebar
-                        userData={userData}
+                        userData={{
+                            name: customer?.name || customer?.firstName || 'Guest',
+                            fullName: `${customer?.firstName || ''} ${customer?.lastName || ''}`.trim() || 'Guest User',
+                            email: customer?.email || 'guest@example.com',
+                        }}
                         activeNav="account"
                         setActiveNav={(id) => {
                             setIsMobileDrawerOpen(false);
@@ -218,7 +239,11 @@ export default function AccountDetailsPage() {
                     {/* Desktop Sidebar */}
                     <div className="hidden md:block md:col-span-3">
                         <Sidebar
-                            userData={userData}
+                            userData={{
+                                name: customer?.name || customer?.firstName || 'Guest',
+                                fullName: `${customer?.firstName || ''} ${customer?.lastName || ''}`.trim() || 'Guest User',
+                                email: customer?.email || 'guest@example.com',
+                            }}
                             activeNav="account"
                             setActiveNav={(id) => router.push(`/${id}`)}
                             navItems={navItems}
@@ -473,5 +498,6 @@ export default function AccountDetailsPage() {
                 </div>
             </footer>
         </div>
+        </AuthGuard>
     );
 }

@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import client from '@/lib/sanityClient';
 import { withTimestamps } from '@/lib/sanityHelpers';
+import {
+  hashPassword,
+  signCustomerToken,
+  sessionCookie,
+} from '@/lib/customerAuth';
 
 const ORDER_PROJECTION = `{
   ...,
@@ -79,7 +84,8 @@ export async function POST(request) {
 
     const order = await client.create({ _type: 'order', status: 'active', ...body });
 
-    // Upsert customer profile
+    // Handle customer account creation/login logic
+    let authToken = null;
     if (body.customer?.email) {
       const email = body.customer.email.toLowerCase();
       const nameParts = (body.customer.name || '').split(' ');
@@ -87,26 +93,81 @@ export async function POST(request) {
       const lastName = nameParts.slice(1).join(' ') || '';
       const address = [body.address, body.apartment, body.city, body.country].filter(Boolean).join(', ');
 
-      const existingCustomer = await client.fetch(`*[_type == "customer" && email == $email][0]{_id}`, { email });
+      // If password was provided (new account), create the customer with password hash
+      // and issue a session cookie so they're logged in immediately after checkout.
+      if (body.password) {
+        const hashedPassword = await hashPassword(body.password);
 
-      if (existingCustomer) {
-        await client
-          .patch(existingCustomer._id)
-          .set({ phone: body.phone || '', address })
-          .inc({ ordersCount: 1, totalSpent: body.total || 0 })
-          .commit();
+        // Check if customer already exists
+        const existingCustomer = await client.fetch(
+          `*[_type == "customer" && email == $email][0]{_id}`,
+          { email }
+        );
+
+        if (existingCustomer) {
+          // Update existing customer with any missing info
+          await client
+            .patch(existingCustomer._id)
+            .set({
+              phone: body.phone || '',
+              address,
+              ...(body.paymentMethod && { paymentMethod: body.paymentMethod }),
+              ...(body.paymentStatus && { paymentStatus: body.paymentStatus }),
+              ...(body.total && { totalSpent: body.total }),
+            })
+            .commit();
+        } else {
+          // Create new customer with password
+          const created = await client.create({
+            _type: 'customer',
+            firstName,
+            lastName,
+            email,
+            status: 'active',
+            phone: body.phone || '',
+            password: hashedPassword,
+            address,
+            ordersCount: 1,
+            totalSpent: body.total || 0,
+            createdAt: new Date().toISOString(),
+          });
+          // Issue a session token for the newly created account
+          authToken = signCustomerToken(created);
+        }
       } else {
-        await client.create({
-          _type: 'customer',
-          firstName,
-          lastName,
-          email,
-          status: 'active',
-          phone: body.phone || '',
-          address,
-          ordersCount: 1,
-          totalSpent: body.total || 0,
-        });
+        // For existing accounts (no new password provided), we don't create a new
+        // customer record. The customer should already exist, so just update with any
+        // missing info. If they don't exist yet, create a guest customer (no password).
+        const existingCustomer = await client.fetch(
+          `*[_type == "customer" && email == $email][0]{_id}`,
+          { email }
+        );
+
+        if (existingCustomer) {
+          await client
+            .patch(existingCustomer._id)
+            .set({
+              phone: body.phone || '',
+              address,
+              ...(body.paymentMethod && { paymentMethod: body.paymentMethod }),
+              ...(body.paymentStatus && { paymentStatus: body.paymentStatus }),
+              ...(body.total && { totalSpent: body.total }),
+            })
+            .commit();
+        } else {
+          await client.create({
+            _type: 'customer',
+            firstName,
+            lastName,
+            email,
+            status: 'active',
+            phone: body.phone || '',
+            address,
+            ordersCount: 1,
+            totalSpent: body.total || 0,
+            createdAt: new Date().toISOString(),
+          });
+        }
       }
     }
 
@@ -119,7 +180,7 @@ export async function POST(request) {
         type: 'new_order',
         title: `New order ${order.orderId}`,
         message: `${customerName} placed an order${orderTotal ? ` for ${orderTotal}` : ''}.`,
-        link: `/admin/orders/order-details?id=${order._id}`,
+        link: `/admin/orders/order-details/${order._id}`,
         isRead: false,
         metadata: {
           orderId: order.orderId,
@@ -134,7 +195,18 @@ export async function POST(request) {
       console.error('Failed to create order notification:', notifErr);
     }
 
-    return NextResponse.json({ success: true, order: withTimestamps(order) }, { status: 201 });
+    const response = NextResponse.json(
+      { success: true, order: withTimestamps(order) },
+      { status: 201 }
+    );
+
+    // If we created a new account, set the session cookie so the customer is
+    // automatically logged in and can access their dashboard/profile/address.
+    if (authToken) {
+      response.headers.set('Set-Cookie', sessionCookie(authToken));
+    }
+
+    return response;
   } catch (error) {
     console.error('Error creating order:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 400 });

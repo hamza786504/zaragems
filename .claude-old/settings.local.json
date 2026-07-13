@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(sed -e 's/=.*/=<redacted>/' .env.local)",
-      "Bash(powershell -c \"\\(Get-Content .env.local\\) -replace '=.*','=<redacted>'\")"
-    ]
-  }
-}

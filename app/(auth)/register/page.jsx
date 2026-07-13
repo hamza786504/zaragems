@@ -3,8 +3,12 @@
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '../../store/authContext';
 
 export default function RegisterPage() {
+    const router = useRouter();
+    const { register } = useAuth();
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -15,6 +19,7 @@ export default function RegisterPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState('');
     const toggleConfirmPassword = () => {
         setShowConfirmPassword((prev) => !prev);
     }
@@ -37,19 +42,32 @@ export default function RegisterPage() {
 
         if (isSubmitting) return;
 
+        setError('');
+
+        if (formData.password.length < 6) {
+            setError('Password must be at least 6 characters long');
+            return;
+        }
+
+        if (formData.password !== formData.confirmPassword) {
+            setError('Passwords do not match');
+            return;
+        }
+
         setIsSubmitting(true);
 
         try {
-            // Simulate API call
-            await new Promise((resolve) => setTimeout(resolve, 1500));
+            await register({
+                firstName: formData.firstName,
+                lastName: formData.lastName,
+                email: formData.email,
+                password: formData.password,
+            });
 
-            // Handle successful registration
-            console.log('Registration data:', formData);
-            // router.push('/dashboard');
-
-        } catch (error) {
-            console.error('Registration failed:', error);
-        } finally {
+            router.push('/dashboard');
+        } catch (err) {
+            console.error('Registration failed:', err);
+            setError(err.message || 'Registration failed. Please try again.');
             setIsSubmitting(false);
         }
     };
@@ -241,8 +259,8 @@ export default function RegisterPage() {
                                             <input
                                                 className="input-elegant font-body-md py-2 w-full pr-10"
                                                 id="confirm_password"
-                                                name="confirm_password"
-                                                type={showPassword ? 'text' : 'password'}
+                                                name="confirmPassword"
+                                                type={showConfirmPassword ? 'text' : 'password'}
                                                 placeholder="••••••••"
                                                 required
                                                 value={formData.confirmPassword}
@@ -261,6 +279,13 @@ export default function RegisterPage() {
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Error Message */}
+                                {error && (
+                                    <p className="font-body-sm text-sm text-red-600 bg-red-50 border border-red-200 px-3 py-2">
+                                        {error}
+                                    </p>
+                                )}
 
                                 {/* Submit Button */}
                                 <div className="pt-stack-sm">

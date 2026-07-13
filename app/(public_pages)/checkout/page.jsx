@@ -24,6 +24,7 @@ const countries = [
 export default function CheckoutPage() {
     const { cartItems, clearCart } = useCart();
     const [shippingConfig, setShippingConfig] = useState(DEFAULT_SHIPPING_CONFIG);
+    const [accountType, setAccountType] = useState('new'); // 'new' or 'existing'
     const [formData, setFormData] = useState({
         email: '',
         newsletter: false,
@@ -38,6 +39,8 @@ export default function CheckoutPage() {
         discountCode: '',
         shippingMethod: 'standard',
         paymentMethod: 'cod',
+        password: '',
+        confirmPassword: '',
     });
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -118,6 +121,16 @@ export default function CheckoutPage() {
         else if (!/^[+\d\s\-()]{7,}$/.test(formData.phone))
             newErrors.phone = 'Please enter a valid phone number.';
         if (cartItems.length === 0) newErrors.cart = 'Your cart is empty.';
+
+        // Validate password fields only for new account
+        if (accountType === 'new') {
+            if (!formData.password) newErrors.password = 'Password is required.';
+            else if (formData.password.length < 6)
+                newErrors.password = 'Password must be at least 6 characters.';
+            if (!formData.confirmPassword) newErrors.confirmPassword = 'Please confirm your password.';
+            else if (formData.password !== formData.confirmPassword)
+                newErrors.confirmPassword = 'Passwords do not match.';
+        }
         return newErrors;
     };
 
@@ -162,6 +175,8 @@ export default function CheckoutPage() {
                     quantity: item.quantity,
                     price: item.price,
                 })),
+                // Include password only for new account creation
+                ...(accountType === 'new' && { password: formData.password }),
             };
 
             const res = await fetch('/api/orders', {
@@ -283,10 +298,36 @@ export default function CheckoutPage() {
                             <section>
                                 <div className="flex justify-between items-end mb-6">
                                     <h2 className="text-headline-sm font-headline-sm text-primary">Contact Information</h2>
-                                    <p className="text-label-sm font-label-sm text-on-surface-variant">
-                                        Already have an account?{' '}
-                                        <Link href="/login" className="text-secondary underline underline-offset-4">Log in</Link>
-                                    </p>
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                className="w-4 h-4 text-secondary focus:ring-secondary/20"
+                                                id="accountTypeNew"
+                                                name="accountType"
+                                                type="radio"
+                                                value="new"
+                                                checked={accountType === 'new'}
+                                                onChange={(e) => setAccountType(e.target.value)}
+                                            />
+                                            <label className="text-label-sm font-label-sm text-on-surface-variant" htmlFor="accountTypeNew">
+                                                New Account
+                                            </label>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                className="w-4 h-4 text-secondary focus:ring-secondary/20"
+                                                id="accountTypeExisting"
+                                                name="accountType"
+                                                type="radio"
+                                                value="existing"
+                                                checked={accountType === 'existing'}
+                                                onChange={(e) => setAccountType(e.target.value)}
+                                            />
+                                            <label className="text-label-sm font-label-sm text-on-surface-variant" htmlFor="accountTypeExisting">
+                                                Already have an account
+                                            </label>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div className="space-y-4">
                                     <div className="relative group">
@@ -301,6 +342,37 @@ export default function CheckoutPage() {
                                         />
                                         {errors.email && <p className="text-error text-[11px] mt-1 px-1">{errors.email}</p>}
                                     </div>
+
+                                    {/* Password fields for new account */}
+                                    {accountType === 'new' && (
+                                        <>
+                                            <div className="relative group">
+                                                <input
+                                                    className={`w-full bg-surface-container-low border-none border-b-2 focus:ring-0 py-4 px-4 transition-all duration-300 placeholder:text-outline-variant text-body-md focus:scale-[1.01] ${errors.password ? 'border-b-2 border-error' : 'border-outline-variant focus:border-secondary'}`}
+                                                    id="password"
+                                                    name="password"
+                                                    type="password"
+                                                    placeholder="Password (min 6 characters)"
+                                                    value={formData.password}
+                                                    onChange={handleInputChange}
+                                                />
+                                                {errors.password && <p className="text-error text-[11px] mt-1 px-1">{errors.password}</p>}
+                                            </div>
+                                            <div className="relative group">
+                                                <input
+                                                    className={`w-full bg-surface-container-low border-none border-b-2 focus:ring-0 py-4 px-4 transition-all duration-300 placeholder:text-outline-variant text-body-md focus:scale-[1.01] ${errors.confirmPassword ? 'border-b-2 border-error' : 'border-outline-variant focus:border-secondary'}`}
+                                                    id="confirmPassword"
+                                                    name="confirmPassword"
+                                                    type="password"
+                                                    placeholder="Confirm Password"
+                                                    value={formData.confirmPassword}
+                                                    onChange={handleInputChange}
+                                                />
+                                                {errors.confirmPassword && <p className="text-error text-[11px] mt-1 px-1">{errors.confirmPassword}</p>}
+                                            </div>
+                                        </>
+                                    )}
+
                                     <div className="flex items-center gap-3 py-2">
                                         <input
                                             className="w-4 h-4 rounded-none border-secondary text-secondary focus:ring-secondary/20"
