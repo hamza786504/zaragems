@@ -249,13 +249,13 @@ export default function ProductPageClient({ initialProduct }) {
                         <div className="flex flex-col gap-3">
                             <div className="flex justify-between items-center">
                                 <span className="text-label-md text-primary uppercase">Select Size</span>
-                                <button
+                                {/* <button
                                     type="button"
                                     className="text-label-sm text-secondary underline underline-offset-4 uppercase bg-transparent border-none cursor-pointer"
                                     onClick={() => setSizeChartOpen(true)}
                                 >
                                     Size Guide
-                                </button>
+                                </button> */}
                             </div>
                             <div className="grid grid-cols-4 gap-3">
                                 {(product.sizes || ['One Size']).map((size) => (
