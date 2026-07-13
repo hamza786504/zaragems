@@ -84,14 +84,14 @@ export default function Navbar() {
           </div>
 
           {/* ── Desktop Navigation — dynamic from DB ──────────────────────── */}
-          <nav className="hidden md:flex space-x-8 lg:space-x-10 items-center">
+          <nav className="hidden md:flex space-x-4 lg:space-x-6 items-center">
             {navItems.map((item) => {
               const hasChildren = item.children && item.children.length > 0;
               return (
                 <div key={item.id} className="relative group py-2">
                   <Link
                     href={item.url}
-                    className="text-on-surface-variant font-label-md hover:text-secondary transition-colors duration-300 nav-link-underline flex items-center gap-1"
+                    className="text-sm text-on-surface-variant font-label-md hover:text-secondary transition-colors duration-300 nav-link-underline flex items-center gap-1"
                   >
                     {item.title}
                     {hasChildren && (

@@ -1,12 +1,12 @@
 // components/HeroCarousel.jsx
 'use client';
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 
 const slides = [
     {
         id: 0,
-        image: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=1400&q=80',
-        color: '#1a2a3a',
+        image: '/banner.png',
     },
 ];
 
@@ -36,7 +36,7 @@ export default function HeroCarousel() {
             <div
                 style={{
                     position: 'relative',
-                    width: '100%',
+                    width: '100vw',
                     height: 'clamp(260px, 55vw, 600px)',
                     overflow: 'hidden',
                 }}
@@ -53,15 +53,13 @@ export default function HeroCarousel() {
                         }}
                         aria-hidden={index !== currentSlide}
                     >
-                        {/* Background image */}
                         <img
                             src={slide.image}
-                            alt={slide.title}
+                            alt={slide.title || "Hero Banner"}
+                            fill
+                            priority
+                            sizes="100vw"
                             style={{
-                                position: 'absolute',
-                                inset: 0,
-                                width: '100%',
-                                height: '100%',
                                 objectFit: 'cover',
                                 display: 'block',
                             }}
@@ -131,151 +129,151 @@ export default function HeroCarousel() {
 
                 {/* Slide indicators — only shown when multiple slides exist */}
                 {isCarousel && (
-                <div
-                    style={{
-                        position: 'absolute',
-                        bottom: '1.25rem',
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        display: 'flex',
-                        gap: '0.625rem',
-                        zIndex: 10,
-                    }}
-                >
-                    {slides.map((_, index) => (
-                        <button
-                            key={index}
-                            type="button"
-                            aria-current={index === currentSlide ? 'true' : 'false'}
-                            aria-label={`Slide ${index + 1}`}
-                            onClick={() => goToSlide(index)}
-                            style={{
-                                width: index === currentSlide ? '1.75rem' : '0.625rem',
-                                height: '0.625rem',
-                                borderRadius: '9999px',
-                                border: 'none',
-                                cursor: 'pointer',
-                                background:
-                                    index === currentSlide
-                                        ? '#ffffff'
-                                        : 'rgba(255,255,255,0.5)',
-                                transition: 'all 0.3s ease',
-                                padding: 0,
-                            }}
-                        />
-                    ))}
-                </div>
+                    <div
+                        style={{
+                            position: 'absolute',
+                            bottom: '1.25rem',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            display: 'flex',
+                            gap: '0.625rem',
+                            zIndex: 10,
+                        }}
+                    >
+                        {slides.map((_, index) => (
+                            <button
+                                key={index}
+                                type="button"
+                                aria-current={index === currentSlide ? 'true' : 'false'}
+                                aria-label={`Slide ${index + 1}`}
+                                onClick={() => goToSlide(index)}
+                                style={{
+                                    width: index === currentSlide ? '1.75rem' : '0.625rem',
+                                    height: '0.625rem',
+                                    borderRadius: '9999px',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    background:
+                                        index === currentSlide
+                                            ? '#ffffff'
+                                            : 'rgba(255,255,255,0.5)',
+                                    transition: 'all 0.3s ease',
+                                    padding: 0,
+                                }}
+                            />
+                        ))}
+                    </div>
                 )}
             </div>
 
             {/* Previous button — only shown when multiple slides exist */}
             {isCarousel && (
-            <button
-                type="button"
-                aria-label="Previous slide"
-                onClick={prevSlide}
-                style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    zIndex: 10,
-                    height: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '0 1rem',
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                }}
-            >
-                <span
+                <button
+                    type="button"
+                    aria-label="Previous slide"
+                    onClick={prevSlide}
                     style={{
-                        display: 'inline-flex',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        zIndex: 10,
+                        height: '100%',
+                        display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        width: '2.5rem',
-                        height: '2.5rem',
-                        borderRadius: '9999px',
-                        background: 'rgba(255,255,255,0.25)',
-                        backdropFilter: 'blur(4px)',
-                        transition: 'background 0.2s ease',
+                        padding: '0 1rem',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.45)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.25)')}
                 >
-                    <svg
-                        style={{ width: '1.25rem', height: '1.25rem', color: '#fff' }}
-                        aria-hidden="true"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
+                    <span
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '2.5rem',
+                            height: '2.5rem',
+                            borderRadius: '9999px',
+                            background: 'rgba(255,255,255,0.25)',
+                            backdropFilter: 'blur(4px)',
+                            transition: 'background 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.45)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.25)')}
                     >
-                        <path
-                            stroke="currentColor"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2.5"
-                            d="m15 19-7-7 7-7"
-                        />
-                    </svg>
-                </span>
-            </button>
+                        <svg
+                            style={{ width: '1.25rem', height: '1.25rem', color: '#fff' }}
+                            aria-hidden="true"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke="currentColor"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2.5"
+                                d="m15 19-7-7 7-7"
+                            />
+                        </svg>
+                    </span>
+                </button>
             )}
 
             {/* Next button — only shown when multiple slides exist */}
             {isCarousel && (
-            <button
-                type="button"
-                aria-label="Next slide"
-                onClick={nextSlide}
-                style={{
-                    position: 'absolute',
-                    top: 0,
-                    right: 0,
-                    zIndex: 10,
-                    height: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '0 1rem',
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                }}
-            >
-                <span
+                <button
+                    type="button"
+                    aria-label="Next slide"
+                    onClick={nextSlide}
                     style={{
-                        display: 'inline-flex',
+                        position: 'absolute',
+                        top: 0,
+                        right: 0,
+                        zIndex: 10,
+                        height: '100%',
+                        display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        width: '2.5rem',
-                        height: '2.5rem',
-                        borderRadius: '9999px',
-                        background: 'rgba(255,255,255,0.25)',
-                        backdropFilter: 'blur(4px)',
-                        transition: 'background 0.2s ease',
+                        padding: '0 1rem',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.45)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.25)')}
                 >
-                    <svg
-                        style={{ width: '1.25rem', height: '1.25rem', color: '#fff' }}
-                        aria-hidden="true"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
+                    <span
+                        style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            width: '2.5rem',
+                            height: '2.5rem',
+                            borderRadius: '9999px',
+                            background: 'rgba(255,255,255,0.25)',
+                            backdropFilter: 'blur(4px)',
+                            transition: 'background 0.2s ease',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.45)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.25)')}
                     >
-                        <path
-                            stroke="currentColor"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2.5"
-                            d="m9 5 7 7-7 7"
-                        />
-                    </svg>
-                </span>
-            </button>
+                        <svg
+                            style={{ width: '1.25rem', height: '1.25rem', color: '#fff' }}
+                            aria-hidden="true"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke="currentColor"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2.5"
+                                d="m9 5 7 7-7 7"
+                            />
+                        </svg>
+                    </span>
+                </button>
             )}
         </div>
     );

@@ -75,7 +75,7 @@ export default function FeaturedProducts({ collectionSlug, title, initialProduct
                 )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-1 gap-y-2">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-1 gap-y-2">
                 {products.length > 0 ? (
                     products.map((product) => (
                         <ProductCard
