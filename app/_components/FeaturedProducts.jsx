@@ -38,8 +38,8 @@ export default function FeaturedProducts({ collectionSlug, title, initialProduct
 
     if (loading) {
         return (
-            <section className="py-stack-lg px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto">
-                <div className="flex justify-between items-end mb-16">
+            <section className="py-3 max-w-container-max mx-auto">
+                <div className="flex justify-between items-end mb-4">
                     <div>
                         <h2 className="text-headline-md font-headline-md">{title || collectionSlug}</h2>
                         <p className="text-label-md font-label-md text-on-surface-variant tracking-widest uppercase mt-2">
@@ -57,8 +57,8 @@ export default function FeaturedProducts({ collectionSlug, title, initialProduct
     }
 
     return (
-        <section className="p-1 max-w-container-max mx-auto">
-            <div className="flex justify-between items-end mb-16">
+        <section className="py-4 px-1 max-w-container-max mx-auto">
+            <div className="flex justify-between items-end mb-4">
                 <div>
                     <h2 className="text-headline-lg font-headline-lg font-bold">{title || collectionSlug}</h2>
                     <p className="text-label-md font-label-md text-on-surface-variant tracking-widest uppercase mt-2">

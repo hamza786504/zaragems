@@ -27,7 +27,7 @@ export default function HeroCarousel() {
 
   return (
     <div
-      id="controls-carousel"
+      id="controls-carousel overflow-x-hidden"
       style={{ position: 'relative', width: '100%' }}
       data-carousel="static"
     >
@@ -36,8 +36,8 @@ export default function HeroCarousel() {
         className="hero-banner"
         style={{
           position: 'relative',
-          width: '100vw',
-          overflow: 'hidden',
+          width: '98.8vw',
+          overflowX: 'hidden',
         }}
       >
         {slides.map((slide, index) => (

@@ -16,7 +16,71 @@ import {
   ShoppingBag,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
 } from 'lucide-react';
+
+// ── Recursive desktop sub-menu item ──────────────────────────────────────────
+function DesktopSubMenuItem({ item, depth }) {
+  const hasChildren = item.children && item.children.length > 0;
+  const indent = 16 + depth * 20;
+  return (
+    <div>
+      <Link
+        href={item.url}
+        className="block px-4 py-2 font-label-md text-on-surface-variant hover:bg-secondary/10 hover:text-secondary transition-colors"
+        style={{ paddingLeft: `${indent}px` }}
+      >
+        {item.title}
+      </Link>
+      {hasChildren && (
+        <div className="border-l-2 border-secondary/20 ml-6">
+          {item.children.map((child) => (
+            <DesktopSubMenuItem key={child.id} item={child} depth={depth + 1} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Recursive mobile nav item ─────────────────────────────────────────────────
+function MobileNavItem({ item, depth, onClose }) {
+  const [open, setOpen] = useState(false);
+  const hasChildren = item.children && item.children.length > 0;
+  const indent = depth * 16;
+  return (
+    <div>
+      <div className="flex items-center justify-between py-2.5 border-b border-secondary/10"
+        style={{ paddingLeft: `${indent}px` }}>
+        <Link
+          href={item.url}
+          onClick={onClose}
+          className="font-label-md hover:text-secondary transition-colors uppercase tracking-wider"
+          style={{ fontSize: depth > 0 ? '13px' : undefined, color: depth > 0 ? 'var(--color-on-surface-variant)' : undefined }}
+        >
+          {item.title}
+        </Link>
+        {hasChildren && (
+          <button
+            onClick={() => setOpen(!open)}
+            className="text-secondary/70 hover:text-secondary bg-transparent border-none flex items-center justify-center cursor-pointer p-1"
+          >
+            {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+        )}
+      </div>
+      {hasChildren && (
+        <div className={`overflow-hidden transition-all duration-300 ${open ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+          <div className="flex flex-col space-y-1">
+            {item.children.map((child) => (
+              <MobileNavItem key={child.id} item={child} depth={depth + 1} onClose={onClose} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Navbar() {
   const { cartItems, updateQuantity, removeFromCart } = useCart();
@@ -24,8 +88,21 @@ export default function Navbar() {
   const router = useRouter();
   const [isCartOpen, setIsCartOpen]       = useState(false);
   const [menuOpen, setMenuOpen]           = useState(false);
-  const [activeSubmenu, setActiveSubmenu] = useState(null);
   const [userMenuOpen, setUserMenuOpen]   = useState(false);
+  const [clientNavItems, setClientNavItems] = useState(null);
+
+  // Client-side fetch: override fallback if the server gave us the static fallback
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/menus?position=header');
+        const data = await res.json();
+        if (data.success && data.menu?.items?.length) {
+          setClientNavItems(data.menu.items);
+        }
+      } catch { /* server data is fine */ }
+    })();
+  }, []);
   const userMenuRef = useRef(null);
 
   const handleLogout = async () => {
@@ -52,16 +129,13 @@ export default function Navbar() {
 
   // ── Dynamic header menu, fetched server-side and provided via context ──────
   // so it's present in the very first render (no client-side fetch/flash).
-  const navItems = useNavMenu();
+  const serverItems = useNavMenu();
+  const navItems = clientNavItems || serverItems;
   const settings = useSiteSettings();
   const logoSrc = settings?.logoUrl || '/logo.png';
   const storeName = settings?.storeName || 'Zaragems';
 
   const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
-
-  const toggleSubmenu = (id) => {
-    setActiveSubmenu(activeSubmenu === id ? null : id);
-  };
 
   return (
     <>
@@ -99,17 +173,11 @@ export default function Navbar() {
                     )}
                   </Link>
 
-                  {/* Children dropdown */}
+                  {/* Children dropdown (recursive) */}
                   {hasChildren && (
-                    <div className="absolute top-full left-0 mt-1 min-w-[180px] bg-surface border border-secondary/20 shadow-lg py-2 hidden group-hover:block transition-all duration-300 z-50 rounded-sm">
+                    <div className="absolute top-full left-0 mt-1 min-w-[200px] bg-surface border border-secondary/20 shadow-lg py-2 hidden group-hover:block transition-all duration-300 z-50 rounded-sm">
                       {item.children.map((child) => (
-                        <Link
-                          key={child.id}
-                          href={child.url}
-                          className="block px-4 py-2 font-label-md text-on-surface-variant hover:bg-secondary/10 hover:text-secondary transition-colors"
-                        >
-                          {child.title}
-                        </Link>
+                        <DesktopSubMenuItem key={child.id} item={child} depth={1} />
                       ))}
                     </div>
                   )}
@@ -236,57 +304,11 @@ export default function Navbar() {
           </button>
         </div>
 
-        {/* ── Mobile Navigation Links — Dynamic ────────────────────────── */}
+        {/* ── Mobile Navigation Links — Dynamic (recursive) ────────────── */}
         <nav className="flex flex-col space-y-1">
-          {navItems.map((item) => {
-            const hasChildren = item.children && item.children.length > 0;
-            return (
-              <div key={item.id} className="flex flex-col">
-                <div className="flex items-center justify-between py-2.5 border-b border-secondary/10">
-                  <Link
-                    href={item.url}
-                    onClick={() => setMenuOpen(false)}
-                    className="text-on-surface font-label-md hover:text-secondary transition-colors uppercase tracking-wider"
-                  >
-                    {item.title}
-                  </Link>
-                  {hasChildren && (
-                    <button
-                      onClick={() => toggleSubmenu(item.id)}
-                      className="text-secondary/70 hover:text-secondary bg-transparent border-none flex items-center justify-center cursor-pointer p-1"
-                    >
-                      {activeSubmenu === item.id
-                        ? <ChevronUp className="w-4 h-4" />
-                        : <ChevronDown className="w-4 h-4" />
-                      }
-                    </button>
-                  )}
-                </div>
-
-                {/* Mobile children accordion */}
-                {hasChildren && (
-                  <div
-                    className={`pl-4 flex flex-col space-y-1 overflow-hidden transition-all duration-300 ${
-                      activeSubmenu === item.id
-                        ? 'max-h-60 opacity-100 mt-2 mb-1'
-                        : 'max-h-0 opacity-0'
-                    }`}
-                  >
-                    {item.children.map((child) => (
-                      <Link
-                        key={child.id}
-                        href={child.url}
-                        onClick={() => setMenuOpen(false)}
-                        className="text-on-surface-variant font-label-md hover:text-secondary py-1.5 transition-colors text-sm block"
-                      >
-                        {child.title}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          {navItems.map((item) => (
+            <MobileNavItem key={item.id} item={item} depth={0} onClose={() => setMenuOpen(false)} />
+          ))}
         </nav>
       </div>
     </>

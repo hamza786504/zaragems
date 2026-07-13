@@ -22,13 +22,13 @@ const products = [
         id: 3,
         title: 'Pendants/MalaSet',
         slug: 'pendants-malaset',
-        image: '/rings.jpg',
+        image: '/pendant.jpg',
     },
     {
         id: 4,
         title: 'Studs/Earings',
         slug: 'studs-earings',
-        image: '/rings.jpg',
+        image: '/studs-earings.jpg',
     },
 ];
 
@@ -64,8 +64,7 @@ export default function NewArrivals() {
                         </p>
                     </div>
                     <p className="text-body-base font-body-base text-on-surface-variant">
-                        Refresh your wardrobe with this week&apos;s new arrivals. Discover the latest trends,
-                        collection highlights, and key pieces for the season.
+                        Refresh your collection with this weeks new arrivals discover the lasted article collection highlights and key pieces of the season…
                     </p>
                     <Link href="/collection/rings-collection" className="text-sm group bg-primary text-on-primary px-6 py-4 font-label-xs uppercase tracking-[0.2em] w-fit transition-all duration-300 hover:bg-primary-container hover:scale-[1.02]">
                         SHOP NOW
@@ -94,7 +93,7 @@ export default function NewArrivals() {
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-primary/60 via-transparent to-transparent opacity-80" />
                                     <div className="absolute bottom-6 left-6">
-                                        <span className="text-white font-headline-md">{product.title}</span>
+                                        <span className="text-sm text-white font-headline-md">{product.title}</span>
                                         <div className="h-0.5 w-0 bg-secondary transition-all duration-500 group-hover/card:w-full mt-1" />
                                     </div>
                                 </div>

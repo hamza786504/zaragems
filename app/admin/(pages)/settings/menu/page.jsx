@@ -4,24 +4,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragOverlay,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
-import {
   GripVertical,
   Pencil,
   Trash2,
@@ -81,6 +63,55 @@ const POSITION_BADGE = {
   none:    { label: 'Hidden',  cls: 'bg-surface-container text-on-surface-variant border-outline-variant' },
 };
 
+const MAX_DEPTH = 2;
+
+// ── Tree helpers ──────────────────────────────────────────────────────────────
+function flattenTree(items, parentId = null, depth = 0) {
+  const result = [];
+  for (const item of items) {
+    result.push({ ...item, parentId, depth, children: undefined });
+    if (item.children && item.children.length > 0) {
+      result.push(...flattenTree(item.children, item.id, depth + 1));
+    }
+  }
+  return result;
+}
+
+function buildTree(flat) {
+  const itemMap = {};
+  const childIds = {};
+
+  for (const item of flat) {
+    itemMap[item.id] = { ...item, children: [] };
+    childIds[item.id] = [];
+  }
+
+  for (const item of flat) {
+    if (item.parentId && itemMap[item.parentId]) {
+      childIds[item.parentId].push(item.id);
+    }
+  }
+
+  const rootIds = flat.filter(i => !i.parentId || !itemMap[i.parentId]).map(i => i.id);
+
+  const build = (ids) => ids.map(id => ({
+    ...itemMap[id],
+    children: build(childIds[id]),
+  }));
+
+  return build(rootIds);
+}
+
+function isDescendant(flat, parentId, childId) {
+  const parentIdx = flat.findIndex(i => i.id === parentId);
+  if (parentIdx === -1) return false;
+  for (let i = parentIdx + 1; i < flat.length; i++) {
+    if (flat[i].depth <= flat[parentIdx].depth) break;
+    if (flat[i].id === childId) return true;
+  }
+  return false;
+}
+
 // ── Toast ─────────────────────────────────────────────────────────────────────
 function Toast({ toast }) {
   if (!toast) return null;
@@ -92,78 +123,25 @@ function Toast({ toast }) {
   );
 }
 
-// ── Sortable Menu Item ────────────────────────────────────────────────────────
-const SortableMenuItem = ({ item, onEdit, onDelete, onAddChild, depth = 0 }) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id });
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 999 : 'auto',
-  };
-
+// ── Drag preview component ────────────────────────────────────────────────────
+function DragPreview({ flat, activeId }) {
+  const item = flat.find(i => i.id === activeId);
+  if (!item) return null;
   return (
-    <div ref={setNodeRef} style={style} {...attributes}>
-      <div className="space-y-2">
-        <div className="group bg-surface border border-outline-variant rounded-lg p-3 flex items-center justify-between hover:shadow-sm transition-all">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
-            <button {...listeners} className="cursor-grab active:cursor-grabbing p-1 hover:bg-surface-container-high rounded touch-none flex-shrink-0">
-              <GripVertical size={18} className="text-on-surface-variant/50" />
-            </button>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-medium text-sm truncate text-on-surface">{item.title}</span>
-                {item.resourceType && item.resourceType !== 'custom' && (
-                  <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold border ${TYPE_COLOR[item.resourceType]} border-transparent`}>
-                    {TYPE_ICON[item.resourceType]}
-                    {item.resourceType}
-                  </span>
-                )}
-              </div>
-              <span className="text-xs text-on-surface-variant/70 truncate block font-mono mt-0.5">{item.url}</span>
-            </div>
-          </div>
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 ml-3 flex-shrink-0">
-            {depth < 2 && (
-              <button onClick={(e) => { e.stopPropagation(); onAddChild && onAddChild(item.id); }}
-                className="p-1.5 hover:bg-primary-container/20 rounded-lg text-primary transition-colors" title="Add child item">
-                <Plus size={15} />
-              </button>
-            )}
-            <button onClick={(e) => { e.stopPropagation(); onEdit(item); }}
-              className="p-1.5 hover:bg-surface-container-high rounded-lg text-on-surface-variant transition-colors">
-              <Pencil size={15} />
-            </button>
-            <button onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
-              className="p-1.5 hover:bg-error-container/20 rounded-lg text-error transition-colors">
-              <Trash2 size={15} />
-            </button>
-          </div>
+    <div className="bg-surface border-2 border-primary rounded-xl p-3 shadow-lg opacity-95 rotate-1">
+      <div className="flex items-center gap-3">
+        <GripVertical size={18} className="text-primary" />
+        <div>
+          <span className="font-medium text-sm block">{item.title}</span>
+          <span className="text-xs text-on-surface-variant font-mono">{item.url}</span>
         </div>
-
-        {item.children && item.children.length > 0 && (
-          <div className="pl-8 space-y-2 border-l-2 border-outline-variant ml-6">
-            <SortableContext items={item.children.map(c => c.id)} strategy={verticalListSortingStrategy}>
-              {item.children.map((child) => (
-                <SortableMenuItem key={child.id} item={child} onEdit={onEdit} onDelete={onDelete}
-                  onAddChild={depth < 1 ? onAddChild : null} depth={depth + 1} />
-              ))}
-            </SortableContext>
-            {depth < 1 && (
-              <button onClick={() => onAddChild && onAddChild(item.id)}
-                className="flex items-center gap-2 text-primary hover:bg-primary-container/10 px-3 py-2 rounded-lg text-xs transition-colors w-full">
-                <Plus size={14} /> Add item to {item.title}
-              </button>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
-};
+}
 
 // ── Add/Edit Item Modal with Autocomplete ─────────────────────────────────────
-const MenuItemModal = ({ isOpen, onClose, onSave, editingItem, parentId }) => {
+const MenuItemModal = ({ isOpen, onClose, onSave, editingItem, parentId, parentDepth }) => {
   const [title, setTitle]           = useState('');
   const [url, setUrl]               = useState('');
   const [resourceType, setResourceType] = useState('custom');
@@ -176,7 +154,6 @@ const MenuItemModal = ({ isOpen, onClose, onSave, editingItem, parentId }) => {
   const titleRef                    = useRef(null);
   const suggestRef                  = useRef(null);
 
-  // Reset on open/editingItem change
   useEffect(() => {
     if (isOpen) {
       if (editingItem) {
@@ -198,7 +175,6 @@ const MenuItemModal = ({ isOpen, onClose, onSave, editingItem, parentId }) => {
     }
   }, [isOpen, editingItem]);
 
-  // Debounced search as title changes
   useEffect(() => {
     clearTimeout(searchTimer.current);
     if (title.trim().length < 1) {
@@ -222,7 +198,6 @@ const MenuItemModal = ({ isOpen, onClose, onSave, editingItem, parentId }) => {
     return () => clearTimeout(searchTimer.current);
   }, [title]);
 
-  // Close suggestions on outside click
   useEffect(() => {
     const handler = (e) => {
       if (suggestRef.current && !suggestRef.current.contains(e.target)) {
@@ -250,7 +225,6 @@ const MenuItemModal = ({ isOpen, onClose, onSave, editingItem, parentId }) => {
     onSave({ title: title.trim(), url: finalUrl, resourceType, resourceId });
   };
 
-  // Group suggestions by type
   const grouped = suggestions.reduce((acc, s) => {
     if (!acc[s.type]) acc[s.type] = [];
     acc[s.type].push(s);
@@ -268,7 +242,6 @@ const MenuItemModal = ({ isOpen, onClose, onSave, editingItem, parentId }) => {
       <div className="fixed inset-0 z-[1000] flex items-center justify-center px-4 pointer-events-none">
         <div className="w-full max-w-[500px] pointer-events-auto">
           <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-          {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant">
             <h3 className="font-semibold text-on-surface text-base">
               {editingItem ? 'Edit Menu Item' : 'Add Menu Item'}
@@ -280,7 +253,6 @@ const MenuItemModal = ({ isOpen, onClose, onSave, editingItem, parentId }) => {
 
           <form onSubmit={handleSubmit}>
             <div className="p-6 space-y-5">
-              {/* Title with autocomplete */}
               <div ref={suggestRef} className="relative">
                 <label className="block text-sm font-medium text-on-surface mb-1.5">
                   Title <span className="text-error">*</span>
@@ -290,7 +262,7 @@ const MenuItemModal = ({ isOpen, onClose, onSave, editingItem, parentId }) => {
                     ref={titleRef}
                     className="w-full bg-surface border border-outline-variant rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none placeholder:text-on-surface-variant/50 pr-10"
                     type="text"
-                    placeholder="Type to search products, collections, pages…"
+                    placeholder="Type to search products, collections, pages\u2026"
                     value={title}
                     onChange={(e) => { setTitle(e.target.value); setSelectedResult(null); setUrl(''); }}
                     autoComplete="off"
@@ -306,7 +278,6 @@ const MenuItemModal = ({ isOpen, onClose, onSave, editingItem, parentId }) => {
                   Type any keyword — matching products, collections, and pages will appear.
                 </p>
 
-                {/* Autocomplete Dropdown */}
                 {showSuggestions && suggestions.length > 0 && (
                   <div className="absolute left-0 right-0 top-full mt-1 bg-surface-container-lowest border border-outline-variant rounded-xl shadow-xl z-50 overflow-hidden max-h-72 overflow-y-auto">
                     {typeOrder.filter(t => grouped[t]?.length > 0).map((type) => (
@@ -337,7 +308,6 @@ const MenuItemModal = ({ isOpen, onClose, onSave, editingItem, parentId }) => {
                 )}
               </div>
 
-              {/* Selected resource badge */}
               {selectedResult && (
                 <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium ${TYPE_COLOR[selectedResult.type]} border-transparent bg-opacity-50`}
                   style={{ backgroundColor: 'rgba(var(--color-primary-rgb, 99,102,241), 0.06)' }}>
@@ -350,7 +320,6 @@ const MenuItemModal = ({ isOpen, onClose, onSave, editingItem, parentId }) => {
                 </div>
               )}
 
-              {/* URL Field */}
               <div>
                 <label className="block text-sm font-medium text-on-surface mb-1.5">
                   URL / Path <span className="text-error">*</span>
@@ -372,11 +341,10 @@ const MenuItemModal = ({ isOpen, onClose, onSave, editingItem, parentId }) => {
                 )}
               </div>
 
-              {/* Parent info */}
               {parentId && (
                 <div className="bg-primary-container/5 border border-primary/20 rounded-xl p-3 flex items-center gap-2">
                   <Info size={14} className="text-primary flex-shrink-0" />
-                  <p className="text-xs text-on-surface-variant">This item will be added as a <strong>nested item</strong>.</p>
+                  <p className="text-xs text-on-surface-variant">This item will be added as a <strong>nested item</strong> (level {parentDepth + 1}).</p>
                 </div>
               )}
             </div>
@@ -433,12 +401,7 @@ const CreateMenuModal = ({ isOpen, onClose, onCreate }) => {
 
   return (
     <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-[999] bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      {/* Modal — pointer-events-none on wrapper, pointer-events-auto on card */}
+      <div className="fixed inset-0 z-[999] bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div className="fixed inset-0 z-[1000] flex items-center justify-center px-4 pointer-events-none">
         <div className="w-full max-w-[500px] pointer-events-auto">
           <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
@@ -544,7 +507,6 @@ const MenusListView = ({ onEditMenu }) => {
     <div className="p-6 lg:p-8 max-w-4xl mx-auto space-y-6">
       <Toast toast={toast} />
 
-      {/* Page header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-on-surface flex items-center gap-2">
@@ -565,7 +527,6 @@ const MenusListView = ({ onEditMenu }) => {
         </div>
       </div>
 
-      {/* Menus Table */}
       <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl overflow-hidden">
         <div className="grid grid-cols-[1fr_auto_auto_auto] gap-4 px-5 py-3 bg-surface-container border-b border-outline-variant text-xs font-semibold text-on-surface-variant uppercase tracking-wider">
           <span>Menu</span>
@@ -633,6 +594,97 @@ const MenusListView = ({ onEditMenu }) => {
   );
 };
 
+// ── Sortable Item with custom drag (no external library) ─────────────────────
+const FlatMenuItem = ({ item, onEdit, onDelete, indicator, onPointerDown, isDragging, containerRef, childZoneRef }) => {
+  const indent = item.depth * 36;
+  const isOver = indicator?.id === item.id;
+  const showChildLine = isOver && indicator?.asChild;
+  const showSiblingLine = isOver && !indicator?.asChild;
+
+  return (
+    <div ref={containerRef} className="relative" style={{ opacity: isDragging ? 0.5 : 1 }}>
+      {/* Sibling drop indicator line (above the item) */}
+      {showSiblingLine && (
+        <div className="absolute left-0 right-0 top-0 z-10 pointer-events-none" style={{ marginLeft: indent }}>
+          <div className="h-0.5 bg-primary rounded-full mx-3" />
+        </div>
+      )}
+
+      {/* Indent connector lines */}
+      {indent > 0 && (
+        <div className="absolute left-0 top-0 bottom-0 flex pointer-events-none" style={{ width: indent }}>
+          {Array.from({ length: item.depth }).map((_, i) => (
+            <div key={i} className="flex-1 flex justify-center">
+              <div className="w-px bg-outline-variant/40 h-full" />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Depth badge */}
+      {item.depth > 0 && (
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 pointer-events-none"
+          style={{ left: 4 + (item.depth - 1) * 36 }}>
+          <ChevronRight size={12} className="text-outline-variant" />
+        </div>
+      )}
+
+      {/* Child drop indicator — left border highlight */}
+      {showChildLine && (
+        <div className="absolute left-0 top-0 bottom-0 rounded-l-lg pointer-events-none z-10" style={{ left: indent }}>
+          <div className="w-1 bg-primary h-full rounded-l-lg" />
+        </div>
+      )}
+
+      <div className={`group bg-surface border rounded-lg p-3 flex items-center justify-between hover:shadow-sm transition-all ${
+        showChildLine ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'border-outline-variant'
+      }`} style={{ marginLeft: indent }}>
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          {/* Drag handle — triggers drag start */}
+          <button
+            onPointerDown={(e) => onPointerDown(e, item.id)}
+            className="cursor-grab active:cursor-grabbing p-1 hover:bg-surface-container-high rounded touch-none flex-shrink-0"
+          >
+            <GripVertical size={18} className="text-on-surface-variant/50" />
+          </button>
+
+          {/* Content area — doubles as child-zone droppable */}
+          <div ref={childZoneRef} className="flex-1 min-w-0 rounded-lg transition-colors px-2 py-1 -mx-2"
+            style={{ cursor: item.depth < MAX_DEPTH ? 'copy' : 'default' }}>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-medium text-sm truncate text-on-surface">{item.title}</span>
+              {item.resourceType && item.resourceType !== 'custom' && (
+                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold border ${TYPE_COLOR[item.resourceType]} border-transparent`}>
+                  {TYPE_ICON[item.resourceType]}
+                  {item.resourceType}
+                </span>
+              )}
+            </div>
+            <span className="text-xs text-on-surface-variant/70 truncate block font-mono mt-0.5">{item.url}</span>
+          </div>
+        </div>
+
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 ml-3 flex-shrink-0">
+          {item.depth < MAX_DEPTH && (
+            <button onClick={(e) => { e.stopPropagation(); onEdit(item); }}
+              className="p-1.5 hover:bg-primary-container/20 rounded-lg text-primary transition-colors" title="Add child item">
+              <Plus size={15} />
+            </button>
+          )}
+          <button onClick={(e) => { e.stopPropagation(); onEdit(item); }}
+            className="p-1.5 hover:bg-surface-container-high rounded-lg text-on-surface-variant transition-colors">
+            <Pencil size={15} />
+          </button>
+          <button onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
+            className="p-1.5 hover:bg-error-container/20 rounded-lg text-error transition-colors">
+            <Trash2 size={15} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ── Menu Editor View ──────────────────────────────────────────────────────────
 const MenuEditorView = ({ handle, onBack }) => {
   const [menu, setMenu]           = useState(null);
@@ -642,12 +694,25 @@ const MenuEditorView = ({ handle, onBack }) => {
   const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading]     = useState(true);
   const [isSaving, setIsSaving]   = useState(false);
-  const [activeId, setActiveId]   = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [parentId, setParentId]   = useState(null);
+  const [parentDepth, setParentDepth] = useState(0);
   const [toast, setToast]         = useState(null);
+  const [dragState, setDragState] = useState(null);       // { activeId, startX, startY, offsetX, offsetY }
+  const [indicator, setIndicator] = useState(null);       // { id, asChild }
   const toastTimer                = useRef(null);
+
+  // Refs for custom drag
+  const itemRefs = useRef({});
+  const childZoneRefs = useRef({});
+  const originalItemsRef = useRef(null);
+  const menuItemsRef = useRef(menuItems);
+
+  // Keep menuItemsRef in sync
+  useEffect(() => {
+    menuItemsRef.current = menuItems;
+  }, [menuItems]);
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
@@ -655,7 +720,6 @@ const MenuEditorView = ({ handle, onBack }) => {
     toastTimer.current = setTimeout(() => setToast(null), 3500);
   };
 
-  // Load menu
   useEffect(() => {
     (async () => {
       setLoading(true);
@@ -674,59 +738,199 @@ const MenuEditorView = ({ handle, onBack }) => {
     })();
   }, [handle]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
-
-  const findItem = (items, id, parentId = null) => {
-    for (let item of items) {
-      if (item.id === id) return { item, parentId };
-      if (item.children) {
-        const f = findItem(item.children, id, item.id);
-        if (f) return f;
-      }
-    }
-    return null;
-  };
-
-  // Reorders the array at the level identified by parentId (null = root)
-  // by moving activeId to overId's position. Rebuilds the tree by id so it
-  // works regardless of which arrays were cloned along the way.
-  const moveInTree = (items, parentId, activeId, overId) => {
-    if (parentId === null) {
-      const oldIdx = items.findIndex(i => i.id === activeId);
-      const newIdx = items.findIndex(i => i.id === overId);
-      if (oldIdx === -1 || newIdx === -1) return items;
-      return arrayMove(items, oldIdx, newIdx);
-    }
-    return items.map(i => {
-      if (i.id === parentId) {
-        const children = i.children || [];
-        const oldIdx = children.findIndex(c => c.id === activeId);
-        const newIdx = children.findIndex(c => c.id === overId);
-        if (oldIdx === -1 || newIdx === -1) return i;
-        return { ...i, children: arrayMove(children, oldIdx, newIdx) };
-      }
-      if (i.children && i.children.length) {
-        return { ...i, children: moveInTree(i.children, parentId, activeId, overId) };
-      }
-      return i;
+  // ── Helper to get current bounding rects ─────────────────────────────────
+  const getRects = useCallback(() => {
+    const itemRects = {};
+    const childRects = {};
+    Object.keys(itemRefs.current).forEach(id => {
+      const el = itemRefs.current[id];
+      if (el) itemRects[id] = el.getBoundingClientRect();
     });
-  };
+    Object.keys(childZoneRefs.current).forEach(id => {
+      const el = childZoneRefs.current[id];
+      if (el) childRects[id] = el.getBoundingClientRect();
+    });
+    return { itemRects, childRects };
+  }, []);
 
-  const handleDragEnd = (event) => {
-    const { active, over } = event;
-    setActiveId(null);
-    if (!over || active.id === over.id) return;
-    const aRes = findItem(menuItems, active.id);
-    const oRes = findItem(menuItems, over.id);
-    if (!aRes || !oRes || aRes.parentId !== oRes.parentId) return;
-    setMenuItems(prev => moveInTree(prev, aRes.parentId, active.id, over.id));
-  };
+  // ── Drag start handler ───────────────────────────────────────────────────
+  const handleDragStart = useCallback((e, id) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Save original tree for cancel/revert
+    originalItemsRef.current = JSON.parse(JSON.stringify(menuItemsRef.current));
+    setDragState({
+      activeId: id,
+      startX: e.clientX,
+      startY: e.clientY,
+      offsetX: 0,
+      offsetY: 0,
+    });
+    setIndicator(null);
+  }, []);
 
-  const handleEdit = (item) => { setEditingItem(item); setParentId(null); setShowModal(true); };
-  const handleAddChild = (pid) => { setParentId(pid); setEditingItem(null); setShowModal(true); };
+  // ── Global move/up handlers ──────────────────────────────────────────────
+  useEffect(() => {
+    if (!dragState) return;
+
+    const onPointerMove = (e) => {
+      e.preventDefault();
+      const { startX, startY } = dragState;
+      setDragState(prev => ({
+        ...prev,
+        offsetX: e.clientX - startX,
+        offsetY: e.clientY - startY,
+      }));
+
+      // Determine drop indicator
+      const { itemRects, childRects } = getRects();
+      const flatItems = flattenTree(menuItemsRef.current);
+      const pointerX = e.clientX;
+      const pointerY = e.clientY;
+
+      let newIndicator = null;
+
+      // 1. Child zones
+      for (const id of Object.keys(childRects)) {
+        const rect = childRects[id];
+        if (
+          pointerX >= rect.left && pointerX <= rect.right &&
+          pointerY >= rect.top && pointerY <= rect.bottom
+        ) {
+          const targetItem = flatItems.find(i => i.id === id);
+          if (targetItem && targetItem.depth < MAX_DEPTH && id !== dragState.activeId) {
+            newIndicator = { id, asChild: true };
+            break;
+          }
+        }
+      }
+
+      // 2. Sibling drop
+      if (!newIndicator) {
+        let overId = null;
+        for (const id of Object.keys(itemRects)) {
+          const rect = itemRects[id];
+          if (id === dragState.activeId) continue;
+          if (
+            pointerY >= rect.top && pointerY <= rect.bottom &&
+            pointerX >= rect.left && pointerX <= rect.right
+          ) {
+            overId = id;
+            break;
+          }
+        }
+        if (overId) {
+          newIndicator = { id: overId, asChild: false };
+        } else {
+          // Append at end if below all items
+          const allRects = Object.values(itemRects);
+          if (allRects.length > 0) {
+            const bottomMost = Math.max(...allRects.map(r => r.bottom));
+            if (pointerY > bottomMost) {
+              newIndicator = { id: '__end__', asChild: false };
+            }
+          }
+        }
+      }
+
+      setIndicator(newIndicator);
+    };
+
+    const onPointerUp = (e) => {
+      if (!dragState) return;
+      const { activeId } = dragState;
+      const dropTarget = indicator; // capture current indicator
+      setDragState(null);
+      setIndicator(null);
+
+      if (dropTarget) {
+        applyDrop(activeId, dropTarget);
+      } else {
+        // No target, revert
+        if (originalItemsRef.current) {
+          setMenuItems(originalItemsRef.current);
+          originalItemsRef.current = null;
+        }
+      }
+    };
+
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setDragState(null);
+        setIndicator(null);
+        if (originalItemsRef.current) {
+          setMenuItems(originalItemsRef.current);
+          originalItemsRef.current = null;
+        }
+      }
+    };
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [dragState, indicator, getRects]); // eslint-disable-line
+
+  // ── Drop logic (uses ref for fresh menuItems) ────────────────────────────
+  const applyDrop = useCallback((activeId, targetIndicator) => {
+    const currentItems = menuItemsRef.current;
+    const flatCopy = flattenTree(currentItems);
+    const oldIdx = flatCopy.findIndex(i => i.id === activeId);
+    if (oldIdx === -1) return;
+
+    const [moved] = flatCopy.splice(oldIdx, 1);
+
+    if (targetIndicator.id === '__end__') {
+      moved.depth = 0;
+      moved.parentId = null;
+      flatCopy.push(moved);
+      const newTree = buildTree(flatCopy);
+      setMenuItems(newTree);
+      showToast('Item moved — save to apply changes', 'success');
+      return;
+    }
+
+    const targetIdx = flatCopy.findIndex(i => i.id === targetIndicator.id);
+    if (targetIdx === -1) return;
+    const targetItem = flatCopy[targetIdx];
+
+    if (targetIndicator.asChild) {
+      if (targetItem.depth >= MAX_DEPTH) {
+        showToast('Maximum nesting depth reached', 'error');
+        return;
+      }
+      if (isDescendant(flatCopy, activeId, targetItem.id)) {
+        showToast('Cannot drop inside its own child', 'error');
+        return;
+      }
+      moved.depth = targetItem.depth + 1;
+      moved.parentId = targetItem.id;
+      let insertIdx = targetIdx + 1;
+      while (insertIdx < flatCopy.length && flatCopy[insertIdx].depth > targetItem.depth) {
+        insertIdx++;
+      }
+      flatCopy.splice(insertIdx, 0, moved);
+    } else {
+      moved.depth = targetItem.depth;
+      moved.parentId = targetItem.parentId;
+      flatCopy.splice(targetIdx, 0, moved);
+    }
+
+    const newTree = buildTree(flatCopy);
+    setMenuItems(newTree);
+    showToast('Item moved — save to apply changes', 'success');
+  }, [showToast]);
+
+  const handleEdit = (item) => {
+    setEditingItem(item);
+    setParentId(item.parentId || null);
+    setParentDepth(item.depth);
+    setShowModal(true);
+  };
 
   const handleDelete = (id) => {
     if (!window.confirm('Delete this menu item?')) return;
@@ -784,11 +988,12 @@ const MenuEditorView = ({ handle, onBack }) => {
     );
   }
 
+  const flat = flattenTree(menuItems);
+
   return (
     <div className="max-w-5xl mx-auto p-6 lg:p-8 space-y-6">
       <Toast toast={toast} />
 
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <button onClick={onBack} className="p-2 rounded-xl border border-outline-variant hover:bg-surface-container transition-colors text-on-surface-variant" title="Back to menus">
@@ -805,7 +1010,6 @@ const MenuEditorView = ({ handle, onBack }) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: Menu Details */}
         <div className="lg:col-span-1 space-y-5">
           <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5">
             <h3 className="font-semibold text-on-surface mb-4 text-sm">Menu Details</h3>
@@ -853,12 +1057,13 @@ const MenuEditorView = ({ handle, onBack }) => {
           <div className="p-4 bg-primary/5 border border-primary/20 rounded-2xl flex items-start gap-3">
             <Info size={16} className="text-primary flex-shrink-0 mt-0.5" />
             <p className="text-xs text-on-surface-variant">
-              Use the <strong>Title</strong> field in the item modal to search and auto-fill any product, collection, or page from your store.
+              Use the <strong>Title</strong> field to search and auto-fill any product, collection, or page.
+              Drag an item and drop it on another item’s content area to nest it as a child (up to 3 levels).
+              Drag the handle to reorder as siblings.
             </p>
           </div>
         </div>
 
-        {/* Right: Menu Items */}
         <div className="lg:col-span-2">
           <div className="bg-surface-container-lowest border border-outline-variant rounded-2xl p-5 min-h-[400px]">
             <div className="flex justify-between items-center mb-5">
@@ -866,38 +1071,27 @@ const MenuEditorView = ({ handle, onBack }) => {
                 <h3 className="font-semibold text-on-surface text-sm">Menu Items</h3>
                 <p className="text-xs text-on-surface-variant mt-0.5">{menuItems.length} {menuItems.length === 1 ? 'item' : 'items'}</p>
               </div>
-              <Button onClick={() => { setParentId(null); setEditingItem(null); setShowModal(true); }} variant="text" icon={<Plus size={16} />}>
+              <Button onClick={() => { setParentId(null); setParentDepth(0); setEditingItem(null); setShowModal(true); }} variant="text" icon={<Plus size={16} />}>
                 Add item
               </Button>
             </div>
 
-            <DndContext sensors={sensors} collisionDetection={closestCenter}
-              onDragStart={(e) => setActiveId(e.active.id)}
-              onDragEnd={handleDragEnd}
-              modifiers={[restrictToVerticalAxis]}>
-              <SortableContext items={menuItems.map(i => i.id)} strategy={verticalListSortingStrategy}>
-                <div className="space-y-2">
-                  {menuItems.map((item) => (
-                    <SortableMenuItem key={item.id} item={item}
-                      onEdit={handleEdit} onDelete={handleDelete} onAddChild={handleAddChild} depth={0} />
-                  ))}
-                </div>
-              </SortableContext>
-
-              <DragOverlay>
-                {activeId ? (
-                  <div className="bg-surface border-2 border-primary rounded-xl p-3 shadow-lg opacity-95 rotate-1">
-                    <div className="flex items-center gap-3">
-                      <GripVertical size={18} className="text-primary" />
-                      <div>
-                        <span className="font-medium text-sm block">{findItem(menuItems, activeId)?.item?.title || 'Moving…'}</span>
-                        <span className="text-xs text-on-surface-variant font-mono">{findItem(menuItems, activeId)?.item?.url || ''}</span>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
-              </DragOverlay>
-            </DndContext>
+            {/* Custom drag zone – no external library */}
+            <div className="space-y-1 relative">
+              {flat.map((item) => (
+                <FlatMenuItem
+                  key={item.id}
+                  item={item}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                  indicator={indicator}
+                  isDragging={dragState?.activeId === item.id}
+                  onPointerDown={handleDragStart}
+                  containerRef={el => (itemRefs.current[item.id] = el)}
+                  childZoneRef={el => (childZoneRefs.current[item.id] = el)}
+                />
+              ))}
+            </div>
 
             {menuItems.length === 0 && (
               <div className="mt-8 border-2 border-dashed border-outline-variant rounded-2xl p-12 flex flex-col items-center justify-center text-center">
@@ -915,11 +1109,28 @@ const MenuEditorView = ({ handle, onBack }) => {
         </div>
       </div>
 
+      {/* Custom drag overlay (fixed, follows pointer) */}
+      {dragState && (
+        <div
+          style={{
+            position: 'fixed',
+            left: dragState.startX + dragState.offsetX,
+            top: dragState.startY + dragState.offsetY,
+            pointerEvents: 'none',
+            zIndex: 9999,
+            transform: 'translate(-50%, -50%)',
+          }}
+        >
+          <DragPreview flat={flat} activeId={dragState.activeId} />
+        </div>
+      )}
+
       <MenuItemModal isOpen={showModal}
         onClose={() => { setShowModal(false); setEditingItem(null); setParentId(null); }}
         onSave={handleSaveItem}
         editingItem={editingItem}
         parentId={parentId}
+        parentDepth={parentDepth}
       />
     </div>
   );
@@ -927,7 +1138,7 @@ const MenuEditorView = ({ handle, onBack }) => {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function MenuPage() {
-  const [view, setView]           = useState('list');      // 'list' | 'editor'
+  const [view, setView]           = useState('list');
   const [activeHandle, setActiveHandle] = useState('');
   const [activeMenuName, setActiveMenuName] = useState('');
 

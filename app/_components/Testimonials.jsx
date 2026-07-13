@@ -29,7 +29,7 @@ export default function Testimonials() {
         <section className="py-stack-lg bg-surface">
             <div className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
                 <div className="text-center mb-16">
-                    <h2 className="text-display-lg-mobile md:text-headline-md font-headline-md text-primary mb-4">
+                    <h2 className="text-xl md:text-2xl text-display-lg-mobile md:text-headline-md font-headline-md text-primary mb-4">
                         Voices of Elegance
                     </h2>
                     <p className="text-label-md font-label-md text-secondary tracking-widest uppercase">

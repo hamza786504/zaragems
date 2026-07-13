@@ -35,15 +35,6 @@ export const adminSettingsNavItems = [
   { href: '/admin/settings/general', label: 'General', icon: MdTune },
   { href: '/admin/settings/menu', label: 'Menus', icon: MdMenu },
   { href: '/admin/settings/shipping', label: 'Shipping', icon: MdLocalShipping },
-  {
-    href: '#',
-    label: 'Custom Settings',
-    icon: MdSettings,
-    children: [
-      { href: '/admin/settings/custom1', label: 'Custom 1', icon: MdTune },
-      { href: '/admin/settings/custom2', label: 'Custom 2', icon: MdTune },
-    ],
-  },
 ];
 
 // Where "Settings" drops the admin on first open (and the default tab).
