@@ -56,6 +56,21 @@ export const siteSettings = defineType({
       type: 'object',
       description: 'Storefront color token → hex map. Managed from the admin General tab.',
     }),
+    defineField({
+      name: 'bankDepositReceiptMode',
+      title: 'Bank Deposit Receipt Mode',
+      type: 'string',
+      description: 'How customers submit payment proof for Bank Deposit. "upload_only" = receipt upload only, "whatsapp_only" = WhatsApp receipt only, "both_at_least_one" = either upload or WhatsApp (at least one required to place order).',
+      options: {
+        list: [
+          { title: 'Upload on checkout only', value: 'upload_only' },
+          { title: 'WhatsApp only', value: 'whatsapp_only' },
+          { title: 'Both — at least one required', value: 'both_at_least_one' },
+        ],
+        layout: 'radio',
+      },
+      initialValue: 'both_at_least_one',
+    }),
   ],
   preview: {
     prepare: () => ({ title: 'Site Settings' }),

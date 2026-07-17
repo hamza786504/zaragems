@@ -3,13 +3,16 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { FaWhatsapp } from 'react-icons/fa';
 import { useCart } from '../../store/cartContext';
 import { useAuth } from '../../store/authContext';
 
 const DEFAULT_SHIPPING_CONFIG = {
     cod: true,
     bankDeposit: false,
+    whatsappNumber: '',
     bankDetails: { accountTitle: '', accountNumber: '', bankName: '', iban: '' },
+    bankDepositReceiptMode: 'both_at_least_one',
     standardCharge: 250,
     freeShippingThreshold: 10000,
     shippingMethods: [
@@ -53,6 +56,26 @@ export default function CheckoutPage() {
     const [receiptFile, setReceiptFile] = useState(null);
     const [receiptUrl, setReceiptUrl] = useState('');
     const [receiptUploading, setReceiptUploading] = useState(false);
+    const [whatsappShared, setWhatsappShared] = useState(false);
+
+    // Derived receipt-submission flags. A single source of truth
+    // (`shippingConfig.bankDepositReceiptMode`) drives everything:
+    //   upload_only             → receipt image upload required
+    //   whatsapp_only           → WhatsApp share required
+    //   both_at_least_one       → upload OR WhatsApp (either satisfies)
+    const receiptUploadEnabled =
+        shippingConfig.bankDepositReceiptMode === 'upload_only' ||
+        shippingConfig.bankDepositReceiptMode === 'both_at_least_one';
+    const whatsappReceiptEnabled =
+        shippingConfig.bankDepositReceiptMode === 'whatsapp_only' ||
+        shippingConfig.bankDepositReceiptMode === 'both_at_least_one';
+
+    // Reset receipt state whenever the (async-loaded) config changes.
+    useEffect(() => {
+        setReceiptUploading(false);
+        setWhatsappShared(false);
+        setReceiptUrl('');
+    }, [shippingConfig]);
 
     // ── Saved addresses for logged-in customers ───────────────────────────────
     const [savedAddresses, setSavedAddresses] = useState([]);
@@ -177,6 +200,33 @@ export default function CheckoutPage() {
     const shippingCost = isFreeShipping ? 0 : baseShippingCost;
     const total = subtotal + shippingCost;
 
+    // ── WhatsApp payment: build a wa.me deep link with the order summary ──
+    // The store's WhatsApp number is configured by the admin in Shipping Settings.
+    const whatsappNumber = (shippingConfig.whatsappNumber || '').replace(/[\s+()\-]/g, '');
+    const buildWhatsappMessage = () => {
+        const lines = ['*New Order — Payment via WhatsApp*'];
+        if (formData.firstName || formData.lastName) {
+            lines.push(`Name: ${`${formData.firstName} ${formData.lastName}`.trim()}`);
+        }
+        if (formData.phone) lines.push(`Phone: ${formData.phone}`);
+        if (formData.email) lines.push(`Email: ${formData.email}`);
+        lines.push('');
+        lines.push('*Order Items:*');
+        cartItems.forEach((item) => {
+            const colorPart = item.color && item.color !== 'Default' ? ` / ${item.color}` : '';
+            lines.push(
+                `- ${item.title} (Size: ${item.size}${colorPart}) x${item.quantity} = Rs. ${(item.price * item.quantity).toLocaleString()}`
+            );
+        });
+        lines.push('');
+        lines.push(`*Order Total:* Rs. ${total.toLocaleString()}`);
+        lines.push(`Shipping Method: ${selectedMethod?.name || 'Standard Shipping'}`);
+        return lines.join('\n');
+    };
+    const whatsappLink = whatsappNumber
+        ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(buildWhatsappMessage())}`
+        : null;
+
     const handleReceiptUpload = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -240,8 +290,21 @@ export default function CheckoutPage() {
             else if (formData.password !== formData.confirmPassword)
                 newErrors.confirmPassword = 'Passwords do not match.';
         }
-        if (formData.paymentMethod === 'bank' && !receiptUrl) {
-            newErrors.receipt = 'Please upload a payment receipt screenshot.';
+        // Bank Deposit receipt proof — required only when Bank Deposit is the
+        // selected method. How it's proven is set by the admin's
+        // `bankDepositReceiptMode`: upload_only, whatsapp_only, or
+        // both_at_least_one (either one satisfies).
+        if (formData.paymentMethod === 'bank') {
+            const mode = shippingConfig.bankDepositReceiptMode;
+            if (mode === 'whatsapp_only') {
+                if (!whatsappShared)
+                    newErrors.receipt = 'Please share your payment receipt on WhatsApp before placing your order.';
+            } else if (mode === 'upload_only') {
+                if (!receiptUrl)
+                    newErrors.receipt = 'Please upload a payment receipt screenshot.';
+            } else if (!receiptUrl && !whatsappShared) {
+                newErrors.receipt = 'Please upload a receipt or share it on WhatsApp to confirm your payment.';
+            }
         }
         return newErrors;
     };
@@ -771,9 +834,15 @@ export default function CheckoutPage() {
                                             </div>
                                         </label>
                                     )}
+
+                                    {/* WhatsApp is NOT a separate payment method — it's a
+                                        receipt-submission option shown inside the Bank Deposit
+                                        info box below, gated by shippingConfig.bankDepositReceiptMode. */}
                                 </div>
 
-                                {/* Bank details info box — shown when bank deposit is selected */}
+                                {/* Bank Deposit info box — shown when Bank Deposit is selected.
+                                    WhatsApp is NOT a separate payment method; it is a receipt-
+                                    submission option gated by shippingConfig.bankDepositReceiptMode. */}
                                 {formData.paymentMethod === 'bank' && shippingConfig.bankDeposit && (
                                     <div className="border border-secondary/20 bg-surface-container-low p-5 space-y-3">
                                         <p className="text-label-md font-bold text-primary flex items-center gap-2">
@@ -809,31 +878,86 @@ export default function CheckoutPage() {
                                         <p className="text-body-sm text-on-surface-variant border-t border-secondary/10 pt-3">
                                             ⚠️ Please transfer the exact order total and send a payment screenshot to confirm. Your order will be processed after payment is verified.
                                         </p>
-                                        <div className="border-t border-secondary/10 pt-4">
-                                            <p className="text-label-md font-bold text-primary mb-3">Upload Payment Receipt</p>
-                                            <label className="flex items-center justify-center w-full h-32 border-2 border-dashed border-secondary/30 rounded cursor-pointer hover:border-secondary transition-colors bg-surface-container-lowest">
-                                                {receiptUrl ? (
-                                                    <div className="flex flex-col items-center gap-2">
-                                                        <span className="material-symbols-outlined text-3xl text-secondary">check_circle</span>
-                                                        <span className="text-label-sm text-secondary">Receipt uploaded</span>
-                                                        <span className="text-label-sm text-on-surface-variant">Tap to replace</span>
-                                                    </div>
-                                                ) : receiptUploading ? (
-                                                    <div className="flex flex-col items-center gap-2">
-                                                        <span className="material-symbols-outlined animate-spin text-3xl text-secondary">progress_activity</span>
-                                                        <span className="text-label-sm text-on-surface-variant">Uploading…</span>
-                                                    </div>
+
+                                        {/* Upload receipt option — shown for upload_only / both_at_least_one */}
+                                        {receiptUploadEnabled && (
+                                            <div className="border-t border-secondary/10 pt-4">
+                                                <p className="text-label-md font-bold text-primary mb-3">Upload Payment Receipt</p>
+                                                <label className="flex items-center justify-center w-full h-32 border-2 border-dashed border-secondary/30 rounded cursor-pointer hover:border-secondary transition-colors bg-surface-container-lowest">
+                                                    {receiptUrl ? (
+                                                        <div className="flex flex-col items-center gap-2">
+                                                            <span className="material-symbols-outlined text-3xl text-secondary">check_circle</span>
+                                                            <span className="text-label-sm text-secondary">Receipt uploaded</span>
+                                                            <span className="text-label-sm text-on-surface-variant">Tap to replace</span>
+                                                        </div>
+                                                    ) : receiptUploading ? (
+                                                        <div className="flex flex-col items-center gap-2">
+                                                            <span className="material-symbols-outlined animate-spin text-3xl text-secondary">progress_activity</span>
+                                                            <span className="text-label-sm text-on-surface-variant">Uploading…</span>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex flex-col items-center gap-2">
+                                                            <span className="material-symbols-outlined text-3xl text-on-surface-variant">cloud_upload</span>
+                                                            <span className="text-label-sm text-on-surface-variant">Click to upload receipt screenshot</span>
+                                                            <span className="text-label-sm text-on-surface-variant/60">PNG, JPG up to 5MB</span>
+                                                        </div>
+                                                    )}
+                                                    <input type="file" accept="image/png,image/jpeg,image/jpg" className="hidden" onChange={handleReceiptUpload} disabled={receiptUploading} />
+                                                </label>
+                                            </div>
+                                        )}
+
+                                        {/* WhatsApp share option — shown for whatsapp_only / both_at_least_one */}
+                                        {whatsappReceiptEnabled && (
+                                            <div className="border-t border-secondary/10 pt-4 space-y-4">
+                                                <p className="text-label-md font-bold text-primary flex items-center gap-2">
+                                                    <FaWhatsapp className="text-[#25D366] text-lg" />
+                                                    Share Receipt on WhatsApp
+                                                </p>
+                                                <p className="text-body-sm text-on-surface-variant">
+                                                    Share a screenshot of your payment (bank transfer / easypaisa / jazzcash) with us on WhatsApp. We&apos;ll verify it and process your order.
+                                                </p>
+
+                                                {whatsappLink ? (
+                                                    <a
+                                                        href={whatsappLink}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        onClick={() => setWhatsappShared(true)}
+                                                        className="flex items-center justify-center gap-2 w-full bg-[#25D366] hover:bg-[#1ebe5b] text-white py-4 font-label-md text-label-md uppercase tracking-widest transition-all active:scale-[0.98]"
+                                                    >
+                                                        <FaWhatsapp className="text-lg" />
+                                                        Share Receipt on WhatsApp
+                                                    </a>
                                                 ) : (
-                                                    <div className="flex flex-col items-center gap-2">
-                                                        <span className="material-symbols-outlined text-3xl text-on-surface-variant">cloud_upload</span>
-                                                        <span className="text-label-sm text-on-surface-variant">Click to upload receipt screenshot</span>
-                                                        <span className="text-label-sm text-on-surface-variant/60">PNG, JPG up to 5MB</span>
+                                                    <div className="flex items-center justify-center gap-2 w-full bg-surface-container-highest text-on-surface-variant py-4 font-label-md text-label-md cursor-not-allowed">
+                                                        <FaWhatsapp className="text-lg" />
+                                                        WhatsApp number not set
                                                     </div>
                                                 )}
-                                                <input type="file" accept="image/png,image/jpeg,image/jpg" className="hidden" onChange={handleReceiptUpload} disabled={receiptUploading} />
-                                            </label>
-                                            {errors.receipt && <p className="text-error text-[11px] mt-2">{errors.receipt}</p>}
-                                        </div>
+
+                                                {whatsappLink && whatsappShared && (
+                                                    <p className="text-body-sm text-secondary flex items-center gap-1.5">
+                                                        <span className="material-symbols-outlined text-base">check_circle</span>
+                                                        WhatsApp opened — send your screenshot, then come back and place your order.
+                                                    </p>
+                                                )}
+                                                {!whatsappLink && (
+                                                    <p className="text-body-sm text-error">
+                                                        The store hasn&apos;t configured a WhatsApp number yet. Please contact support or choose another payment method.
+                                                    </p>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Hint shown when either proof satisfies */}
+                                        {shippingConfig.bankDepositReceiptMode === 'both_at_least_one' && (
+                                            <p className="text-body-sm text-on-surface-variant border-t border-secondary/10 pt-3">
+                                                You can either upload a receipt above or share it on WhatsApp — only one is required to place your order.
+                                            </p>
+                                        )}
+
+                                        {errors.receipt && <p className="text-error text-[11px] mt-2">{errors.receipt}</p>}
                                     </div>
                                 )}
                             </section>

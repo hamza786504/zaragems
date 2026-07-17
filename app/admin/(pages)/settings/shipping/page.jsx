@@ -13,6 +13,8 @@ const DEFAULT_SHIPPING = {
   shippingMethods: [
     { id: 'standard', name: 'Standard Shipping', description: '3–5 Business Days', charge: 250, isDefault: true },
   ],
+  bankDepositReceiptMode: 'upload_only',
+  whatsappNumber: '',
 };
 
 const SettingsCard = ({ icon: Icon, title, subtitle, children }) => (
@@ -79,6 +81,15 @@ export default function ShippingSettingsPage() {
   const handleSave = async () => {
     setSaveStatus('saving');
     try {
+      // Additional validation for WhatsApp receipt mode
+      if (shipping.bankDepositReceiptMode === 'whatsapp_only' || shipping.bankDepositReceiptMode === 'both_at_least_one') {
+        if (!shipping.whatsappNumber || shipping.whatsappNumber.trim() === '') {
+          alert('Please provide a WhatsApp number when using WhatsApp receipt option.');
+          setSaveStatus('idle');
+          return;
+        }
+      }
+
       const res = await fetch('/api/settings/general', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -198,6 +209,90 @@ export default function ShippingSettingsPage() {
                     </span>
                   )}
                 </label>
+
+                {/* Bank Deposit receipt-submission config.
+                    IMPORTANT: kept OUTSIDE the Bank Deposit <label> above — nesting
+                    <label>s is invalid HTML and breaks the radios. Only shown when
+                    Bank Deposit is enabled. */}
+                {shipping.bankDeposit && (
+                  <div className="mt-4 p-4 bg-surface-container-low rounded-lg border border-[#E1E3E5] space-y-3">
+                      <h4 className="font-label-md text-label-md text-on-surface">Receipt Submission Method</h4>
+                      <p className="text-body-sm text-on-surface-variant">
+                        Configure how customers can submit proof of payment for Bank Deposit orders.
+                      </p>
+                      <div className="space-y-3">
+                        <label className="flex items-start gap-4 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="bankDepositReceiptMode"
+                            value="upload_only"
+                            checked={shipping.bankDepositReceiptMode === 'upload_only'}
+                            onChange={(e) => setShipping(prev => ({ ...prev, bankDepositReceiptMode: e.target.value }))}
+                            className="h-4 w-4 text-primary focus:ring-primary"
+                          />
+                          <div className="space-y-1">
+                            <span className="font-label-md text-on-surface">Upload receipt on checkout</span>
+                            <p className="text-body-sm text-on-surface-variant">
+                              Customers can only upload a receipt image from their device during checkout.
+                            </p>
+                          </div>
+                        </label>
+                        <label className="flex items-start gap-4 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="bankDepositReceiptMode"
+                            value="whatsapp_only"
+                            checked={shipping.bankDepositReceiptMode === 'whatsapp_only'}
+                            onChange={(e) => setShipping(prev => ({ ...prev, bankDepositReceiptMode: e.target.value }))}
+                            className="h-4 w-4 text-primary focus:ring-primary"
+                          />
+                          <div className="space-y-1">
+                            <span className="font-label-md text-on-surface">Share via WhatsApp only</span>
+                            <p className="text-body-sm text-on-surface-variant">
+                              Customers get a WhatsApp link to share their payment screenshot - no file upload.
+                            </p>
+                          </div>
+                        </label>
+                        <label className="flex items-start gap-4 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="bankDepositReceiptMode"
+                            value="both_at_least_one"
+                            checked={shipping.bankDepositReceiptMode === 'both_at_least_one'}
+                            onChange={(e) => setShipping(prev => ({ ...prev, bankDepositReceiptMode: e.target.value }))}
+                            className="h-4 w-4 text-primary focus:ring-primary"
+                          />
+                          <div className="space-y-1">
+                            <span className="font-label-md text-on-surface">Both upload and WhatsApp (at least one required)</span>
+                            <p className="text-body-sm text-on-surface-variant">
+                              Customers can either upload a receipt OR click the WhatsApp share button. One is enough to place the order.
+                            </p>
+                          </div>
+                        </label>
+                      </div>
+                      {(shipping.bankDepositReceiptMode === 'whatsapp_only' || shipping.bankDepositReceiptMode === 'both_at_least_one') && (
+                        <div className="mt-4 p-3 bg-surface-container-low rounded-lg border border-[#E1E3E5]">
+                          <h5 className="font-label-sm text-label-md text-on-surface">WhatsApp Configuration</h5>
+                          <p className="text-body-sm text-on-surface-variant">
+                            Add the phone number customers will share their payment screenshots with.
+                          </p>
+                          <div>
+                            <label className="block font-label-md text-on-surface-variant mb-1.5">WhatsApp Phone Number</label>
+                            <input
+                              type="tel"
+                              className="w-full px-3 py-2 text-body-md border border-[#C9CCCF] rounded focus:border-primary focus:ring-2 focus:ring-primary/10 outline-none transition-all"
+                              placeholder="e.g. +92 300 1234567 or 03001234567"
+                              value={shipping.whatsappNumber}
+                              onChange={e => setShipping(prev => ({ ...prev, whatsappNumber: e.target.value }))}
+                            />
+                            <p className="text-body-sm text-on-surface-variant mt-1.5">
+                              Format: country code + number (e.g. +92 300 1234567, without spaces or parentheses).
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
               </div>
             </SettingsCard>
 
