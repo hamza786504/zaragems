@@ -202,7 +202,7 @@ export default function CheckoutPage() {
 
     // ── WhatsApp payment: build a wa.me deep link with the order summary ──
     // The store's WhatsApp number is configured by the admin in Shipping Settings.
-    const whatsappNumber = (shippingConfig.whatsappNumber || '').replace(/[\s+()\-]/g, '');
+    const whatsappNumber = (shippingConfig.whatsappNumber || '').replace(/[\s()\-]/g, '');
     const buildWhatsappMessage = () => {
         const lines = ['*New Order — Payment via WhatsApp*'];
         if (formData.firstName || formData.lastName) {
