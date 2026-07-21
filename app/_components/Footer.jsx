@@ -17,7 +17,7 @@ export default function Footer() {
         e.preventDefault();
         if (!message.trim()) return;
         const encodedMessage = encodeURIComponent(message.trim());
-        window.open(`https://wa.me/+923305056010?text=${encodedMessage}`, '_blank');
+        window.open(`https://wa.me/+923294555199?text=${encodedMessage}`, '_blank');
         setMessage('');
         setIsOpen(false);
     };
